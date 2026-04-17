@@ -1,109 +1,126 @@
-# CampusIQ
+# 🚀 QuickPermit (CampusIQ)
 
-A college management system built with Django and MySQL, developed as a final year project. CampusIQ provides a unified platform for managing permissions, certificates, and meetings across a college hierarchy.
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Modules](#modules)
-- [Tech Stack](#tech-stack)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Project](#running-the-project)
-- [Role Hierarchy](#role-hierarchy)
-- [Features](#features)
-- [Project Structure](#project-structure)
+A college management system built with Django and MySQL, developed as a final year project. QuickPermit (CampusIQ) provides a unified platform for managing permissions, certificates, and meetings across a college hierarchy.
 
 ---
 
-## Overview
+## 🌐 Live Demo
 
-CampusIQ is a role-based college management platform that allows students, staff, HODs, deans, and principals to interact through three core modules — Permissions, Certificates, and Meetings — with a centralized notification system and AI-powered features.
+👉 https://sunitha11.pythonanywhere.com
 
 ---
 
-## Modules
+## 📌 Table of Contents
+
+* [Overview](#overview)
+* [Modules](#modules)
+* [Tech Stack](#tech-stack)
+* [Installation](#installation)
+* [Configuration](#configuration)
+* [Running the Project](#running-the-project)
+* [Role Hierarchy](#role-hierarchy)
+* [Features](#features)
+* [Project Structure](#project-structure)
+* [Author](#author)
+
+---
+
+## 📖 Overview
+
+QuickPermit (CampusIQ) is a role-based college management platform that allows students, staff, HODs, deans, and principals to interact through three core modules — Permissions, Certificates, and Meetings — with a centralized notification system and AI-powered features.
+
+---
+
+## 🧩 Modules
 
 ### 1. Permission Module
-- Students and staff can submit permission/leave requests
-- Role-based authority chain: Student → Proctor/Staff → HOD → Dean → Principal
-- Authorities can approve, reject, forward, or reassign requests
-- **Auto-escalation**: If an authority does not act within the set time, the request is automatically escalated to the next authority
-- 10-minute reminder email sent before auto-escalation
-- **AI Letter Generator**: Uses Groq (Llama 3) to generate professional permission letters based on the requester's role
-- **AI Insight**: Authorities get an AI-powered analysis of each request with approval score, recommendation, and monthly statistics
-- Bulk forward support
-- Request tracking with full history
+
+* Students and staff can submit permission/leave requests
+* Role-based authority chain: Student → Proctor/Staff → HOD → Dean → Principal
+* Authorities can approve, reject, forward, or reassign requests
+* **Auto-escalation** for pending requests
+* 10-minute reminder email before escalation
+* **AI Letter Generator** using Groq (Llama 3)
+* **AI Insight** with approval score and recommendation
+* Bulk forward support
+* Full request tracking
+
+---
 
 ### 2. Certificate Module
-- Students can apply for study certificates, bonafide certificates, transfer certificates, and marks memos
-- Dean reviews and approves or forwards to Principal
-- Approved certificates are generated as PDFs with QR code verification
-- Certificate download with digital signature and stamp support
+
+* Apply for study, bonafide, transfer certificates, and marks memos
+* Dean approval workflow
+* PDF generation with QR verification
+* Digital signature and stamp support
+
+---
 
 ### 3. Meeting Module
-- Staff, HODs, Deans, and Principals can create and schedule meetings
-- Jitsi-powered video conferencing embedded in the platform
-- Live attendance tracking via checkpoint system (10, 20, 30 minutes)
-- Real-time whiteboard with multi-page support and PDF download
-- Live captions using Web Speech API
-- Meeting transcript saved automatically
-- **AI Summary**: Auto-generates a structured meeting summary using Groq (Llama 3) when the meeting ends
-- Attendance report PDF download
-- Meeting history with filters
+
+* Schedule and manage meetings
+* Jitsi-based video conferencing
+* Attendance tracking (10, 20, 30 min checkpoints)
+* Whiteboard with PDF export
+* Live captions
+* Transcript saving
+* **AI Meeting Summary (Groq - Llama 3)**
+* Attendance report download
+
+---
 
 ### 4. Notification Module
-- Centralized notifications for all three modules
-- Notifications for: request submitted, approved, rejected, forwarded, reassigned, auto-escalated, meeting invited, meeting ended, meeting cancelled, certificate approved, certificate rejected
-- Mark read / Mark all read
-- Direct links to the relevant request or meeting
+
+* Centralized notifications
+* Real-time alerts for all modules
+* Mark read / Mark all read
+* Direct navigation links
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Django 3.0 |
-| Database | MySQL |
-| Frontend | Tailwind CSS, Vanilla JS |
-| Video Conferencing | Jitsi iFrame API |
-| AI / LLM | Groq API (Llama 3.3 70B) |
-| PDF Generation | ReportLab, jsPDF |
-| Background Tasks | APScheduler |
-| Email | Django SMTP |
-| Authentication | Django Auth |
+| Layer              | Technology               |
+| ------------------ | ------------------------ |
+| Backend            | Django 3.0               |
+| Database           | MySQL                    |
+| Frontend           | Tailwind CSS, JavaScript |
+| Video Conferencing | Jitsi API                |
+| AI / LLM           | Groq API (Llama 3.3 70B) |
+| PDF                | ReportLab, jsPDF         |
+| Scheduler          | APScheduler              |
+| Email              | Django SMTP              |
 
 ---
 
-## Installation
+## ⚙️ Installation
 
 ### Prerequisites
-- Python 3.10
-- MySQL
-- pip
+
+* Python 3.10
+* MySQL
+* pip
 
 ### Steps
 
 ```bash
 # Clone the repository
-git clone https://github.com/NallamilliSunitha/campusiq.git
-cd campusiq
+git clone https://github.com/NallamilliSunitha/quickpermit.git
+cd quickpermit
 
 # Install dependencies
 pip install django mysqlclient pillow reportlab groq apscheduler python-dotenv PyPDF2 python-docx qrcode
 
-# Create .env file in project root
+# Create .env file
 echo GROQ_API_KEY=your_groq_api_key_here > .env
 ```
 
 ---
 
-## Configuration
+## 🔧 Configuration
 
-### Database (campusiq/settings.py)
+### Database (settings.py)
+
 ```python
 DATABASES = {
     'default': {
@@ -117,7 +134,8 @@ DATABASES = {
 }
 ```
 
-### Email (campusiq/settings.py)
+### Email Configuration
+
 ```python
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -125,42 +143,31 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'your_email@gmail.com'
 EMAIL_HOST_PASSWORD = 'your_app_password'
-DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
 ```
 
-### Groq API Key (.env)
-```
-GROQ_API_KEY=gsk_your_key_here
-```
+### Environment Variables (.env)
 
-Get a free API key from: https://console.groq.com/keys
+```
+SECRET_KEY=your_secret_key
+GROQ_API_KEY=your_api_key
+EMAIL_HOST_USER=your_email
+EMAIL_HOST_PASSWORD=your_password
+```
 
 ---
 
-## Running the Project
+## ▶️ Running the Project
 
 ```bash
-# Apply migrations
 python manage.py makemigrations
 python manage.py migrate
-
-# Create superuser
 python manage.py createsuperuser
-
-# Run the server
-python manage.py runserver 0.0.0.0:8000
-```
-
-The auto-escalation scheduler starts automatically when the server starts.
-
-For college network access, other users can connect via:
-```
-http://<your-ip>:8000
+python manage.py runserver
 ```
 
 ---
 
-## Role Hierarchy
+## 🏫 Role Hierarchy
 
 ```
 Principal
@@ -171,71 +178,69 @@ Principal
                 └── Student
 ```
 
-### Registration URLs
-- Students: `/accounts/register/?type=student`
-- Employees (Staff, HOD, Dean): `/accounts/register/?type=employee`
-- Principal: `/accounts/register/?type=principal`
+---
+
+## ✨ Features
+
+### 🤖 AI Features
+
+* Permission Letter Generator
+* AI Approval Insights
+* Meeting Summary Generator
+
+### ⏱️ Auto Escalation
+
+* Runs every minute
+* Escalates pending requests
+* Sends email reminders
+
+### 🎨 Whiteboard
+
+* Multi-page drawing
+* PDF export
+
+### 📊 Attendance
+
+* Time-based checkpoints
+* Attendance reports
 
 ---
 
-## Features
-
-### AI Features (Powered by Groq - Free)
-- **Permission Letter Generator** — Generates formal letters based on requester role, reason, and dates
-- **AI Insight for Authorities** — Score, recommendation (APPROVE/REJECT/REVIEW), flags, and monthly stats
-- **Meeting AI Summary** — Auto-generates structured summary from meeting transcript
-
-### Auto Escalation
-- Runs every 1 minute via APScheduler
-- Escalates overdue requests through the role chain automatically
-- Sends 10-minute reminder email before escalation
-- Sends escalation emails to both new authority and student
-- Marks request as expired if it reaches top authority with no action
-
-### Whiteboard
-- Multi-page canvas drawing
-- Save page and continue on new page
-- Download all pages as PDF
-
-### Attendance
-- Checkpoint-based attendance (10, 20, 30 minutes)
-- Live attendance view for host
-- Attendance PDF report download
-- Left early tracking
-
----
-
-## Project Structure
+## 📂 Project Structure
 
 ```
 campusiq/
-├── accounts/          # Auth, login, registration, dashboard
-├── permissions/       # Permission request module
-│   └── scheduler.py   # Auto-escalation background job
-├── certificates/      # Certificate request module
-├── meetings/          # Meeting module
-├── core/              # Notifications, utilities, analytics
-├── templates/         # All HTML templates
-├── campusiq/          # Django settings and URLs
-├── .env               # API keys (not committed to git)
+├── accounts/
+├── permissions/
+├── certificates/
+├── meetings/
+├── core/
+├── templates/
+├── campusiq/
 ├── manage.py
+├── .env
 └── README.md
 ```
 
 ---
 
-## Academic Information
+## 👤 Author
 
-- **Project**: Final Year Project (4th Year, 2nd Semester)
-- **Institution**: College of Engineering
-- **Department**: Computer Science and Engineering
-- **Platform**: CampusIQ — AI-Powered College Management System
+**Nallamilli Sunitha**
+Final Year CSE Student
+Project: QuickPermit (CampusIQ)
 
 ---
 
-## Notes
+## 📌 Notes
 
-- The `.env` file is excluded from git for security — never commit API keys
-- Auto-escalation works automatically as long as the server is running
-- Groq API is completely free (14,400 requests/day)
-- Jitsi video conferencing works on the college local network
+* `.env` file is not pushed to GitHub for security
+* Auto-escalation runs automatically
+* Groq API free tier supported
+* Works on college/local network
+
+---
+
+## 📜 License
+
+This project is developed for academic purposes.
