@@ -1,0 +1,86 @@
+{% load tz %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification - CampusIQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+<div class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-8">
+
+    {% if issued %}
+        <!-- Valid Certificate -->
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                <span class="text-4xl">✅</span>
+            </div>
+            <h1 class="text-2xl font-bold text-green-700">Certificate Verified</h1>
+            <p class="text-gray-500 mt-1">This is an authentic CampusIQ certificate</p>
+        </div>
+
+        <div class="space-y-3 text-sm">
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-gray-500 font-medium">Certificate Code</span>
+                <span class="font-bold text-indigo-600">{{ issued.cert_code }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-gray-500 font-medium">Student Name</span>
+                <span class="font-semibold">{{ issued.request.student.get_full_name }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-gray-500 font-medium">Username / Roll No</span>
+                <span class="font-semibold">{{ issued.request.student.username }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-gray-500 font-medium">Certificate Type</span>
+                <span class="font-semibold">{{ issued.request.get_cert_type_display }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-gray-500 font-medium">Approved By</span>
+                <span class="font-semibold">
+                    {{ issued.approved_by.get_full_name|default:issued.approved_by.username }}
+                </span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-gray-500 font-medium">Approved On</span>
+                <span class="font-semibold">
+                    {% if issued.approved_at %}
+                        {{ issued.approved_at|date:"d-m-Y H:i" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </span>
+            </div>
+            <div class="flex justify-between pb-2">
+                <span class="text-gray-500 font-medium">Status</span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                    AUTHENTIC
+                </span>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center">
+            <p class="text-xs text-gray-400">Issued by CampusIQ · Verified on {{ issued.approved_at|date:"d M Y" }}</p>
+        </div>
+
+    {% else %}
+        <!-- Invalid Certificate -->
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+                <span class="text-4xl">❌</span>
+            </div>
+            <h1 class="text-2xl font-bold text-red-700">Invalid Certificate</h1>
+            <p class="text-gray-500 mt-2">This certificate code is not valid or does not exist in our records.</p>
+        </div>
+    {% endif %}
+
+    <div class="mt-6 text-center">
+        <a href="/" class="text-indigo-600 text-sm hover:underline">← Back to CampusIQ</a>
+    </div>
+</div>
+
+</body>
+</html>

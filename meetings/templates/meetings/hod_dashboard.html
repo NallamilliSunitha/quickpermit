@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-6xl mx-auto mt-8 space-y-6">
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-2xl font-bold text-gray-800">Meeting Analytics Dashboard</h2>
+    <p class="text-gray-500 mt-1">
+      Role: {{ role|upper }} {% if dept %}| Department: {{ dept }}{% endif %}
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div class="bg-blue-50 rounded-xl shadow p-6 text-center">
+      <p class="text-gray-600">Total Meetings</p>
+      <p class="text-4xl font-bold text-blue-700 mt-2">{{ total_meetings }}</p>
+    </div>
+
+    <div class="bg-green-50 rounded-xl shadow p-6 text-center">
+      <p class="text-gray-600">Total Participants</p>
+      <p class="text-4xl font-bold text-green-700 mt-2">{{ total_participants }}</p>
+    </div>
+
+    <div class="bg-purple-50 rounded-xl shadow p-6 text-center">
+      <p class="text-gray-600">Average Participation Score</p>
+      <p class="text-4xl font-bold text-purple-700 mt-2">{{ avg_score }}</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Meeting Type Statistics</h3>
+
+    {% if type_stats %}
+      <div class="overflow-x-auto">
+        <table class="w-full border border-gray-200 text-sm">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="p-3 text-left">Meeting Type</th>
+              <th class="p-3 text-left">Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in type_stats %}
+              <tr class="border-t hover:bg-gray-50">
+                <td class="p-3">{{ item.meeting_type|title }}</td>
+                <td class="p-3">{{ item.total }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500">No meeting statistics available.</p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <div class="flex flex-wrap gap-3">
+      <a href="{% url 'meeting_history' %}"
+         class="inline-flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-900 transition">
+        🕘 Meeting History
+      </a>
+
+      <a href="{% url 'create_meeting' %}"
+         class="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
+        🎥 Create Meeting
+      </a>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

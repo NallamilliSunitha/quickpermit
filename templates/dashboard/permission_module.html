@@ -1,0 +1,788 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto mt-8 space-y-6">
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Permission Module</h2>
+        <p class="text-gray-500 mt-1">Manage permission requests, approvals, analytics, and workflow actions</p>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        {% if profile and profile.role|lower != "principal" %}
+          <a href="{% url 'request_permission' %}"
+             class="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow hover:bg-indigo-700 transition">
+            ➕ Request Permission
+          </a>
+        {% endif %}
+
+        {% if profile and profile.role|lower != "student" %}
+          <a href="{% url 'analytics_dashboard' %}"
+             class="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow hover:bg-indigo-700 transition">
+            📊 Permission Analytics
+          </a>
+        {% endif %}
+
+        <a href="{% url 'dashboard' %}"
+           class="inline-flex items-center gap-2 bg-gray-800 text-white px-5 py-2.5 rounded-lg font-semibold shadow hover:bg-gray-900 transition">
+          ← Back
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if profile and profile.role|lower == "student" %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white rounded-xl shadow p-5 text-center">
+        <p class="text-gray-500">Total Requests</p>
+        <p class="text-3xl font-bold text-indigo-600">{{ total }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-5 text-center">
+        <p class="text-gray-500">Pending</p>
+        <p class="text-3xl font-bold text-yellow-500">{{ pending }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-5 text-center">
+        <p class="text-gray-500">Approved</p>
+        <p class="text-3xl font-bold text-green-600">{{ approved }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-5 text-center">
+        <p class="text-gray-500">Rejected</p>
+        <p class="text-3xl font-bold text-red-600">{{ rejected }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-6">
+      <h3 class="text-xl font-semibold mb-4">Your Submitted Requests</h3>
+
+      {% if submitted_requests %}
+        <div class="overflow-x-auto">
+          <table class="w-full border border-gray-200 text-sm">
+            <thead class="bg-gray-100 text-gray-700">
+              <tr>
+                <th class="p-3 text-left">Title</th>
+                <th class="p-3 text-left">Status</th>
+                <th class="p-3 text-left">Current Location</th>
+                <th class="p-3 text-left">Created</th>
+                <th class="p-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for req in submitted_requests %}
+                <tr class="border-t hover:bg-gray-50">
+                  <td class="p-3">{{ req.title|default:"—" }}</td>
+
+                  <td class="p-3">
+                    {% if req.status == "approved" %}
+                      <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Approved</span>
+                    {% elif req.status == "rejected" %}
+                      <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Rejected</span>
+                    {% else %}
+                      {% if req.is_urgent and req.escalate_at and req.escalate_at <= now %}
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-800">TIMED OUT</span>
+                      {% else %}
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Pending</span>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+
+                  <td class="p-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                      {{ req.current_level|upper }}
+                      {% if req.request_to %}
+                        (
+                        {% if req.request_to.first_name %}
+                          {{ req.request_to.first_name }} {{ req.request_to.last_name }}
+                        {% else %}
+                          {{ req.request_to.username }}
+                        {% endif %}
+                        )
+                      {% endif %}
+                    </span>
+                  </td>
+
+                  <td class="p-3">{{ req.applied_at|date:"Y-m-d" }}</td>
+
+                  <td class="p-3 text-center">
+                    <a href="{% url 'track_request' req.id %}"
+                       class="inline-flex items-center gap-2 px-3 py-1 text-xs rounded bg-teal-600 text-white hover:bg-teal-700">
+                      👁 Track
+                    </a>
+
+                    {% if req.status == "pending" %}
+                      {% if req.is_urgent and req.escalate_at and req.escalate_at <= now %}
+                      {% else %}
+                        <form action="{% url 'delete_request' req.id %}" method="POST" class="inline">
+                          {% csrf_token %}
+                          <button type="submit"
+                                  onclick="return confirm('Are you sure you want to delete this request?')"
+                                  class="px-3 py-1 text-xs rounded bg-gray-700 text-white hover:bg-gray-800">
+                            🗑 Delete
+                          </button>
+                        </form>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-gray-500 text-center py-4">No requests found.</p>
+      {% endif %}
+    </div>
+
+  {% else %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div class="bg-yellow-400 text-white rounded-xl shadow p-6">
+        <p class="text-lg font-semibold">Pending Review</p>
+        <p class="text-4xl font-bold mt-2">{{ received_counts.pending }}</p>
+      </div>
+
+      {% if profile and profile.role|lower != "principal" %}
+        <a href="{% url 'my_requests' %}"
+           class="block bg-blue-500 text-white rounded-xl shadow p-6 hover:bg-blue-600 transition">
+          <p class="text-lg font-semibold">My Requests</p>
+          <p class="text-4xl font-bold mt-2">{{ submitted_requests|length }}</p>
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-6">
+      <h3 class="text-xl font-semibold mb-1">Requests Received</h3>
+
+      <p class="text-gray-500 mb-4">
+        Pending: {{ received_counts.pending }},
+        Approved: {{ received_counts.approved }},
+        Rejected: {{ received_counts.rejected }}
+      </p>
+
+      {% if received_requests %}
+        <div class="overflow-x-auto">
+          <table class="w-full border border-gray-200 text-sm">
+            <thead class="bg-gray-100 text-gray-700">
+              <tr>
+                <th class="p-3 text-left">Title</th>
+                <th class="p-3 text-left">Submitted By</th>
+                <th class="p-3 text-left">Date</th>
+                <th class="p-3 text-center">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for req in received_requests %}
+                <tr class="border-t hover:bg-gray-50">
+                  <td class="p-3">
+                    {{ req.title|default:"—" }}
+
+                    {% if req.is_urgent and req.status == "pending" and req.escalate_at %}
+                      {% if req.escalate_at <= now %}
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-800">
+                          ⏰ TIMED OUT
+                        </span>
+                      {% else %}
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                          ⚡ URGENT
+                        </span>
+
+                        <span class="ml-2 text-xs font-semibold text-red-600 countdown-timer"
+                              data-escalate="{{ req.escalate_at|date:'c' }}">
+                          ⏳ Loading...
+                        </span>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+
+                  <td class="p-3">{{ req.student.username }}</td>
+                  <td class="p-3">{{ req.from_date }} → {{ req.to_date }}</td>
+
+                  <td class="p-3 text-center">
+                    {% if req.status == "pending" and req.is_urgent and req.escalate_at and req.escalate_at <= now %}
+                      <span class="px-3 py-1 text-xs rounded-full bg-gray-200 text-gray-800 font-semibold">
+                        ⏰ TIMED OUT
+                      </span>
+
+                    {% elif req.status == "approved" %}
+                      <span class="px-3 py-1 text-xs rounded-full bg-green-100 text-green-700 font-semibold">
+                        Approved
+                      </span>
+
+                    {% elif req.status == "rejected" %}
+                      <span class="px-3 py-1 text-xs rounded-full bg-red-100 text-red-700 font-semibold">
+                        Rejected
+                      </span>
+
+                    {% elif req.status == "pending" and req.request_to_id != request.user.id %}
+                      <span class="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-semibold">
+                        Forwarded
+                      </span>
+
+                    {% else %}
+                      <div class="flex flex-wrap justify-center gap-2">
+                        <a href="{% url 'approve_request' req.id %}"
+                           class="px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700">
+                          Approve
+                        </a>
+
+                        <a href="{% url 'reject_request' req.id %}"
+                           class="px-3 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700">
+                          Reject
+                        </a>
+
+                        <button type="button"
+                                class="px-3 py-1 text-xs rounded bg-gray-800 text-white hover:bg-gray-900 ai-btn"
+                                data-id="{{ req.id }}">
+                          AI Insight
+                        </button>
+
+                        <button type="button"
+                                class="px-3 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 reassign-btn"
+                                data-id="{{ req.id }}">
+                          Reassign
+                        </button>
+
+                        {% if profile and profile.role|lower != "principal" and req.status == "pending" and req.request_to_id == request.user.id %}
+                          <button type="button"
+                                  class="px-3 py-1 text-xs rounded bg-yellow-500 text-white hover:bg-yellow-600 forward-btn"
+                                  data-id="{{ req.id }}">
+                            Forward
+                          </button>
+                        {% endif %}
+
+                        <a href="{% url 'track_request' req.id %}"
+                           class="px-3 py-1 text-xs rounded bg-teal-600 text-white hover:bg-teal-700">
+                          Track
+                        </a>
+
+                        <a href="{% url 'view_request' req.id %}"
+                           class="px-3 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">
+                          View
+                        </a>
+                      </div>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-gray-500 text-center py-4">No requests assigned.</p>
+      {% endif %}
+    </div>
+
+    <div id="forwardModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-50">
+      <div class="bg-white rounded-xl shadow p-6 w-full max-w-lg">
+        <h3 class="text-lg font-semibold mb-4">Forward Request</h3>
+
+        <label class="block text-sm font-medium mb-1">Select Role</label>
+        <select id="roleSelect" class="w-full border rounded p-2 mb-4">
+          <option value="">-- Select Role --</option>
+        </select>
+
+        <label class="block text-sm font-medium mb-1">Select Person</label>
+        <select id="userSelect" class="w-full border rounded p-2 mb-4">
+          <option value="">-- Select User --</option>
+        </select>
+
+        <label class="block text-sm font-medium mb-1">Comment (optional)</label>
+        <textarea id="forwardComment"
+                  class="w-full border rounded p-2 mb-4"
+                  rows="3"
+                  placeholder="Write a note to the next authority (optional)..."></textarea>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" class="px-4 py-2 rounded border" onclick="closeForwardModal()">Cancel</button>
+          <button type="button" class="px-4 py-2 rounded bg-indigo-600 text-white" onclick="submitForward()">Forward</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="reassignModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-50">
+      <div class="bg-white rounded-xl shadow p-6 w-full max-w-lg">
+        <h3 class="text-lg font-semibold mb-4">Reassign Request</h3>
+
+        <label class="block text-sm font-medium mb-1">Select User</label>
+        <select id="reassignUserSelect" class="w-full border rounded p-2 mb-4">
+          <option value="">-- Select User --</option>
+        </select>
+
+        <label id="commentLabel" class="block text-sm font-medium mb-1 hidden">Comment</label>
+        <textarea id="reassignComment"
+                  class="w-full border rounded p-2 mb-4 hidden"
+                  rows="3"
+                  placeholder="Enter comment (required)"></textarea>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" class="px-4 py-2 rounded border" onclick="closeReassignModal()">Cancel</button>
+          <button type="button" class="px-4 py-2 rounded bg-indigo-600 text-white" onclick="submitReassign()">Reassign</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentReqId = null;
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + "=")) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      function openForwardModal(reqId) {
+        currentReqId = reqId;
+        const m = document.getElementById("forwardModal");
+        m.classList.remove("hidden");
+        m.classList.add("flex");
+        loadRoles();
+      }
+
+      function closeForwardModal() {
+        const m = document.getElementById("forwardModal");
+        m.classList.add("hidden");
+        m.classList.remove("flex");
+        currentReqId = null;
+      }
+
+      async function loadRoles() {
+        const res = await fetch(`/permissions/requests/${currentReqId}/forward-ui/`);
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+
+        if (!res.ok) {
+          alert(data.error || "Not allowed");
+          closeForwardModal();
+          return;
+        }
+
+        const roleSelect = document.getElementById("roleSelect");
+        roleSelect.innerHTML = `<option value="">-- Select Role --</option>`;
+        (data.allowed_roles || []).forEach(r => {
+          roleSelect.innerHTML += `<option value="${r}">${r.toUpperCase()}</option>`;
+        });
+
+        document.getElementById("userSelect").innerHTML = `<option value="">-- Select User --</option>`;
+        roleSelect.onchange = loadUsers;
+      }
+
+      async function loadUsers() {
+        const role = document.getElementById("roleSelect").value;
+        if (!role) return;
+
+        const res = await fetch(`/permissions/requests/${currentReqId}/forward-ui/?role=${encodeURIComponent(role)}`);
+        const data = await res.json();
+
+        const userSelect = document.getElementById("userSelect");
+        userSelect.innerHTML = `<option value="">-- Select User --</option>`;
+
+        (data.users || []).forEach(u => {
+          const full = `${u.user__first_name || ""} ${u.user__last_name || ""}`.trim();
+          const label = full ? `${full} (${u.user__username})` : u.user__username;
+          userSelect.innerHTML += `<option value="${u.user__id}">${label}</option>`;
+        });
+      }
+
+      async function submitForward() {
+        const target_role = document.getElementById("roleSelect").value;
+        const target_user_id = document.getElementById("userSelect").value;
+        const comment = (document.getElementById("forwardComment").value || "").trim();
+
+        if (!target_role || !target_user_id) {
+          alert("Select role and user");
+          return;
+        }
+
+        const res = await fetch(`/permissions/requests/${currentReqId}/forward-do/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": getCookie("csrftoken")
+          },
+          body:
+            `target_role=${encodeURIComponent(target_role)}` +
+            `&target_user_id=${encodeURIComponent(target_user_id)}` +
+            `&comment=${encodeURIComponent(comment)}`
+        });
+
+        let data = {};
+        try { data = await res.json(); } catch(e) {}
+
+        if (!res.ok || !data.ok) {
+          alert(data.error || `Forward failed (${res.status})`);
+          return;
+        }
+
+        closeForwardModal();
+        location.reload();
+      }
+
+      document.addEventListener("click", function(e){
+        const btn = e.target.closest(".forward-btn");
+        if (!btn) return;
+        openForwardModal(btn.dataset.id);
+      });
+
+      let currentReassignReqId = null;
+
+      function closeReassignModal() {
+        const m = document.getElementById("reassignModal");
+        m.classList.add("hidden");
+        m.classList.remove("flex");
+        currentReassignReqId = null;
+
+        const commentBox = document.getElementById("reassignComment");
+        if (commentBox) commentBox.value = "";
+      }
+
+      async function openReassignModal(reqId) {
+        currentReassignReqId = reqId;
+
+        const res = await fetch(`/permissions/reassign/${reqId}/`);
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+
+        if (!res.ok || !data.ok) {
+          alert(data.error || "Unable to load users");
+          return;
+        }
+
+        const select = document.getElementById("reassignUserSelect");
+        select.innerHTML = `<option value="">-- Select User --</option>`;
+
+        (data.users || []).forEach(u => {
+          const full = (`${u.first_name || ""} ${u.last_name || ""}`).trim();
+          const role = (u.role || "").toUpperCase();
+          const label = full ? `${full} (${role})` : `${u.username} (${role})`;
+          select.innerHTML += `<option value="${u.id}">${label}</option>`;
+        });
+
+        const commentLabel = document.getElementById("commentLabel");
+        const commentBox = document.getElementById("reassignComment");
+        if (commentLabel && commentBox) {
+          commentLabel.classList.remove("hidden");
+          commentBox.classList.remove("hidden");
+        }
+
+        const m = document.getElementById("reassignModal");
+        m.classList.remove("hidden");
+        m.classList.add("flex");
+      }
+
+      async function submitReassign() {
+        const target_user_id = document.getElementById("reassignUserSelect").value;
+        const comment = (document.getElementById("reassignComment")?.value || "").trim();
+
+        if (!currentReassignReqId) {
+          alert("Request id missing");
+          return;
+        }
+
+        if (!target_user_id) {
+          alert("Select a user");
+          return;
+        }
+
+        if (!comment) {
+          alert("Comment is required");
+          return;
+        }
+
+        const res = await fetch(`/permissions/reassign/${currentReassignReqId}/do/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: `target_user_id=${encodeURIComponent(target_user_id)}&comment=${encodeURIComponent(comment)}`
+        });
+
+        let data = {};
+        try { data = await res.json(); } catch(e) {}
+
+        if (!res.ok || !data.ok) {
+          alert(data.error || `Reassign failed (${res.status})`);
+          return;
+        }
+
+        closeReassignModal();
+        location.reload();
+      }
+
+      document.addEventListener("click", function(e){
+        const btn = e.target.closest(".reassign-btn");
+        if (btn) openReassignModal(btn.dataset.id);
+      });
+
+      function closeAiModal() {
+  const m = document.getElementById("aiInsightModal");
+  m.classList.add("hidden");
+  m.classList.remove("flex");
+}
+
+function setScoreRing(score) {
+  const circle = document.getElementById("score-circle");
+  const text   = document.getElementById("score-text");
+  if (score === null || score === undefined) {
+    text.textContent = "—";
+    circle.style.strokeDashoffset = "251.2";
+    circle.style.stroke = "#6366f1";
+    return;
+  }
+  const offset = 251.2 - (251.2 * score / 100);
+  circle.style.strokeDashoffset = offset;
+  text.textContent = score;
+  if (score >= 70)      circle.style.stroke = "#16a34a";
+  else if (score >= 40) circle.style.stroke = "#f59e0b";
+  else                  circle.style.stroke = "#dc2626";
+}
+
+function setRecommendation(rec) {
+  const badge = document.getElementById("recommendation-badge");
+  badge.textContent = rec || "REVIEW";
+  badge.className = "px-6 py-3 rounded-full text-lg font-bold ";
+  if (rec === "APPROVE")      badge.className += "bg-green-100 text-green-700";
+  else if (rec === "REJECT")  badge.className += "bg-red-100 text-red-700";
+  else                        badge.className += "bg-yellow-100 text-yellow-700";
+}
+
+function setFlags(flags) {
+  const container = document.getElementById("flags-container");
+  const section   = document.getElementById("flags-section");
+  container.innerHTML = "";
+  if (!flags || flags.length === 0) {
+    section.classList.add("hidden");
+    return;
+  }
+  section.classList.remove("hidden");
+  flags.forEach(f => {
+    const span = document.createElement("span");
+    span.className = "px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200";
+    span.textContent = "⚠ " + f;
+    container.appendChild(span);
+  });
+}
+
+document.addEventListener("click", async function(e) {
+  const btn = e.target.closest(".ai-btn");
+  if (!btn) return;
+
+  const reqId = btn.dataset.id;
+
+  // Open modal with loading state
+  const modal = document.getElementById("aiInsightModal");
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  document.getElementById("ai-loading").classList.remove("hidden");
+  document.getElementById("ai-content").classList.add("hidden");
+  document.getElementById("ai-applicant-label").textContent = "Analyzing request...";
+
+  try {
+    const res  = await fetch(`/permissions/ai/insight/${reqId}/`);
+    const data = await res.json();
+
+    if (!data.ok) {
+      alert(data.error || "Failed to load AI insight");
+      closeAiModal();
+      return;
+    }
+
+    // Populate content
+    document.getElementById("ai-applicant-label").textContent =
+      `${data.applicant_name || data.applicant} · ${data.leave_type} · ${data.month}`;
+
+    document.getElementById("ai-summary-text").textContent  = data.summary || "No summary available.";
+    document.getElementById("stat-same-taken").textContent  = data.same_type_taken ?? 0;
+    document.getElementById("stat-all-taken").textContent   = data.all_types_taken ?? 0;
+    document.getElementById("stat-same-total").textContent  = data.same_type_total ?? 0;
+    document.getElementById("stat-rejected").textContent    = data.month_rejected ?? 0;
+    document.getElementById("stat-all-time").textContent    = data.all_time_total ?? 0;
+    document.getElementById("stat-all-approved").textContent = data.all_time_approved ?? 0;
+    document.getElementById("stat-approval-rate").textContent = (data.approval_rate ?? 0) + "%";
+    document.getElementById("ai-month-label").textContent   = "Statistics for " + (data.month || "");
+
+    setScoreRing(data.score);
+    setRecommendation(data.recommendation);
+    setFlags(data.flags);
+
+    // Show content
+    document.getElementById("ai-loading").classList.add("hidden");
+    document.getElementById("ai-content").classList.remove("hidden");
+
+  } catch (err) {
+    alert("Error loading insight: " + err);
+    closeAiModal();
+  }
+});
+
+      function formatTime(ms) {
+        if (ms <= 0) return "0m 00s";
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}m ${seconds < 10 ? '0' : ''}${seconds}s`;
+      }
+
+      function startCountdowns() {
+        const timers = document.querySelectorAll(".countdown-timer");
+
+        timers.forEach(timer => {
+          const escalateTime = new Date(timer.dataset.escalate);
+          let reloaded = false;
+
+          const interval = setInterval(() => {
+            const now = new Date();
+            const diff = escalateTime - now;
+
+            if (diff <= 0) {
+              timer.innerHTML = "⏳ 0m 00s";
+              timer.classList.remove("text-red-600");
+              timer.classList.add("text-purple-600");
+
+              if (!reloaded) {
+                reloaded = true;
+                setTimeout(() => location.reload(), 5000);
+              }
+
+              clearInterval(interval);
+              return;
+            }
+
+            timer.innerHTML = "⏳ " + formatTime(diff);
+          }, 1000);
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", startCountdowns);
+    </script>
+
+  {% endif %}
+  <!-- AI Insight Modal -->
+<div id="aiInsightModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-5 flex justify-between items-center">
+      <div>
+        <h3 class="text-white text-xl font-bold">AI Insight</h3>
+        <p class="text-indigo-200 text-sm mt-0.5" id="ai-applicant-label">Analyzing request...</p>
+      </div>
+      <button onclick="closeAiModal()" class="text-white hover:text-indigo-200 text-2xl font-bold">✕</button>
+    </div>
+
+    <!-- Loading state -->
+    <div id="ai-loading" class="p-10 text-center">
+      <div class="inline-block w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+      <p class="text-gray-500 font-medium">Generating AI analysis...</p>
+    </div>
+
+    <!-- Content -->
+    <div id="ai-content" class="hidden p-6 space-y-5">
+
+      <!-- Score + Recommendation row -->
+      <div class="flex flex-col sm:flex-row gap-4">
+
+        <!-- Score ring -->
+        <div class="flex-1 bg-gray-50 rounded-xl p-5 flex flex-col items-center justify-center">
+          <p class="text-gray-500 text-sm font-medium mb-3">Approval Score</p>
+          <div class="relative w-28 h-28">
+            <svg class="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke-width="10"
+                      stroke-linecap="round"
+                      id="score-circle"
+                      stroke-dasharray="251.2"
+                      stroke-dashoffset="251.2"
+                      class="transition-all duration-1000"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="score-text" class="text-3xl font-bold text-gray-800">—</span>
+              <span class="text-xs text-gray-400">/100</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="flex-1 bg-gray-50 rounded-xl p-5 flex flex-col items-center justify-center gap-3">
+          <p class="text-gray-500 text-sm font-medium">Recommendation</p>
+          <div id="recommendation-badge" class="px-6 py-3 rounded-full text-lg font-bold">—</div>
+          <p class="text-xs text-gray-400 text-center">Based on history and pattern analysis</p>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+        <p class="text-indigo-700 font-semibold text-sm mb-2">AI Analysis</p>
+        <p id="ai-summary-text" class="text-gray-700 text-sm leading-relaxed">—</p>
+      </div>
+
+      <!-- Flags -->
+      <div id="flags-section">
+        <p class="text-gray-600 font-semibold text-sm mb-2">Flags / Concerns</p>
+        <div id="flags-container" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Stats grid -->
+      <div>
+        <p class="text-gray-600 font-semibold text-sm mb-3">Leave Statistics</p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-blue-50 rounded-xl p-3 text-center">
+            <p class="text-2xl font-bold text-blue-600" id="stat-same-taken">0</p>
+            <p class="text-xs text-gray-500 mt-1">Same Type<br>Approved</p>
+          </div>
+          <div class="bg-green-50 rounded-xl p-3 text-center">
+            <p class="text-2xl font-bold text-green-600" id="stat-all-taken">0</p>
+            <p class="text-xs text-gray-500 mt-1">All Types<br>Approved</p>
+          </div>
+          <div class="bg-yellow-50 rounded-xl p-3 text-center">
+            <p class="text-2xl font-bold text-yellow-600" id="stat-same-total">0</p>
+            <p class="text-xs text-gray-500 mt-1">Same Type<br>This Month</p>
+          </div>
+          <div class="bg-red-50 rounded-xl p-3 text-center">
+            <p class="text-2xl font-bold text-red-600" id="stat-rejected">0</p>
+            <p class="text-xs text-gray-500 mt-1">Rejected<br>This Month</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- All time stats -->
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-gray-600 font-semibold text-sm mb-3">All Time Record</p>
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <p class="text-xl font-bold text-gray-800" id="stat-all-time">0</p>
+            <p class="text-xs text-gray-500">Total Requests</p>
+          </div>
+          <div>
+            <p class="text-xl font-bold text-green-600" id="stat-all-approved">0</p>
+            <p class="text-xs text-gray-500">Approved</p>
+          </div>
+          <div>
+            <p class="text-xl font-bold text-indigo-600" id="stat-approval-rate">0%</p>
+            <p class="text-xs text-gray-500">Approval Rate</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Month label -->
+      <p class="text-center text-xs text-gray-400" id="ai-month-label"></p>
+
+    </div>
+  </div>
+</div>
+
+</div>
+
+{% endblock %}

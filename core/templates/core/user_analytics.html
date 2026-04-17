@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="bg-white rounded-xl shadow p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">User Analytics</h2>
+      <p class="text-gray-500 mt-1">Search results and request history (Submitted + Received).</p>
+    </div>
+
+    <a href="{% url 'analytics_dashboard' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800 transition">
+      ← Back to Analytics
+    </a>
+  </div>
+
+  <!-- Search Box -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Search</h3>
+
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <select name="type" class="border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500" required>
+        <option value="">-- Select Role --</option>
+        <option value="student" {% if search_type == "student" %}selected{% endif %}>Student</option>
+        <option value="staff" {% if search_type == "staff" %}selected{% endif %}>Staff</option>
+        <option value="proctor" {% if search_type == "proctor" %}selected{% endif %}>Proctor</option>
+        <option value="hod" {% if search_type == "hod" %}selected{% endif %}>HOD</option>
+        <option value="dean" {% if search_type == "dean" %}selected{% endif %}>Dean</option>
+        <option value="principal" {% if search_type == "principal" %}selected{% endif %}>Principal</option>
+      </select>
+
+      <input type="text"
+             name="q"
+             value="{{ search_q }}"
+             placeholder="Enter username or name..."
+             class="border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500"
+             required />
+
+      <button type="submit"
+              class="bg-indigo-600 text-white rounded-lg p-3 font-semibold hover:bg-indigo-700 transition">
+        🔍 Search
+      </button>
+    </form>
+
+    {% if search_type and search_q %}
+      {% if target_profile %}
+        <div class="mt-4 p-4 rounded-lg bg-green-50 border border-green-200">
+          <p class="text-sm text-green-800">
+            Showing analytics for:
+            <b>{{ target_user.get_full_name|default:target_user.username }}</b>
+            ({{ target_profile.role|upper }})
+            {% if target_profile.department %} - {{ target_profile.department }}{% endif %}
+          </p>
+        </div>
+      {% else %}
+        <div class="mt-4 p-4 rounded-lg bg-red-50 border border-red-200">
+          <p class="text-sm text-red-700">No user found for this role and search query.</p>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  {% if target_profile %}
+
+  <!-- SUBMITTED SUMMARY -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Requests Submitted by {{ target_user.username }}</h3>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+      <div class="p-4 rounded-xl bg-gray-50 text-center shadow-sm">
+        <p class="text-gray-500">Total</p>
+        <p class="text-3xl font-bold text-gray-800 mt-2">{{ submitted_counts.total|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-yellow-50 text-center shadow-sm">
+        <p class="text-gray-600">Pending</p>
+        <p class="text-3xl font-bold text-yellow-600 mt-2">{{ submitted_counts.pending|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-green-50 text-center shadow-sm">
+        <p class="text-gray-600">Approved</p>
+        <p class="text-3xl font-bold text-green-600 mt-2">{{ submitted_counts.approved|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-rose-50 text-center shadow-sm">
+        <p class="text-gray-600">Rejected</p>
+        <p class="text-3xl font-bold text-rose-600 mt-2">{{ submitted_counts.rejected|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-red-50 text-center shadow-sm">
+        <p class="text-gray-600">Urgent</p>
+        <p class="text-3xl font-bold text-red-600 mt-2">{{ submitted_counts.urgent|default:0 }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow p-6 mt-6">
+  <h3 class="text-xl font-semibold mb-4">
+    Requests Submitted Status Distribution
+  </h3>
+
+  <div class="flex flex-col md:flex-row md:items-center gap-6">
+
+    <!-- Small Pie -->
+    <div class="w-[260px] h-[260px] mx-auto">
+      <canvas id="submittedPieChart"></canvas>
+    </div>
+
+    <!-- Extra Info -->
+    <div class="text-sm text-gray-700">
+      <p><b>Total Submitted:</b> {{ submitted_counts.total|default:0 }}</p>
+      <p><b>Urgent Submitted:</b> {{ submitted_counts.urgent|default:0 }}</p>
+      <p class="text-gray-500 mt-2">
+        *Urgent overlaps with statuses, so it is shown separately.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+  <!-- SUBMITTED TABLE -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h4 class="text-lg font-semibold mb-3">Submitted Requests (Details)</h4>
+    <div class="overflow-x-auto">
+      <table class="w-full border border-gray-200 text-sm">
+        <thead class="bg-gray-100 text-gray-700">
+          <tr>
+            <th class="p-3 text-left">Title</th>
+            <th class="p-3 text-left">Status</th>
+            <th class="p-3 text-left">Current Level</th>
+            <th class="p-3 text-left">Assigned To</th>
+            <th class="p-3 text-left">Applied</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in submitted_qs %}
+          <tr class="border-t hover:bg-gray-50">
+            <td class="p-3">{{ r.title|default:"—" }}</td>
+            <td class="p-3">{{ r.status|upper }}</td>
+            <td class="p-3">{{ r.current_level|upper }}</td>
+            <td class="p-3">
+              {% if r.request_to %}
+                {{ r.request_to.get_full_name|default:r.request_to.username }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="p-3">{{ r.applied_at|date:"Y-m-d H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="p-3 text-gray-500">No submitted requests found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RECEIVED (ONLY FOR NON-STUDENT) -->
+  {% if search_type != "student" %}
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Requests Received by {{ target_user.username }}</h3>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-5">
+      <div class="p-4 rounded-xl bg-gray-50 text-center shadow-sm">
+        <p class="text-gray-500">Total</p>
+        <p class="text-3xl font-bold text-gray-800 mt-2">{{ received_counts.total|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-yellow-50 text-center shadow-sm">
+        <p class="text-gray-600">Pending</p>
+        <p class="text-3xl font-bold text-yellow-600 mt-2">{{ received_counts.pending|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-green-50 text-center shadow-sm">
+        <p class="text-gray-600">Approved</p>
+        <p class="text-3xl font-bold text-green-600 mt-2">{{ received_counts.approved|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-rose-50 text-center shadow-sm">
+        <p class="text-gray-600">Rejected</p>
+        <p class="text-3xl font-bold text-rose-600 mt-2">{{ received_counts.rejected|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-red-50 text-center shadow-sm">
+        <p class="text-gray-600">Urgent</p>
+        <p class="text-3xl font-bold text-red-600 mt-2">{{ received_counts.urgent|default:0 }}</p>
+      </div>
+    </div>
+
+    <!-- ACTION COUNTS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-4"
+         id="actionData"
+         data-approved="{{ action_counts.approved|default:0 }}"
+         data-rejected="{{ action_counts.rejected|default:0 }}"
+         data-forwarded="{{ action_counts.forwarded|default:0 }}"
+         data-reassigned="{{ action_counts.reassigned|default:0 }}"
+         data-auto="{{ action_counts.auto_escalated|default:0 }}">
+
+      <div class="p-4 rounded-xl bg-green-50 text-center shadow-sm">
+        <p class="text-gray-600">Approved By User</p>
+        <p class="text-2xl font-bold text-green-700 mt-1">{{ action_counts.approved|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-rose-50 text-center shadow-sm">
+        <p class="text-gray-600">Rejected By User</p>
+        <p class="text-2xl font-bold text-rose-700 mt-1">{{ action_counts.rejected|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-blue-50 text-center shadow-sm">
+        <p class="text-gray-600">Forwarded By User</p>
+        <p class="text-2xl font-bold text-blue-700 mt-1">{{ action_counts.forwarded|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-purple-50 text-center shadow-sm">
+        <p class="text-gray-600">Reassigned By User</p>
+        <p class="text-2xl font-bold text-purple-700 mt-1">{{ action_counts.reassigned|default:0 }}</p>
+      </div>
+
+      <div class="p-4 rounded-xl bg-amber-50 text-center shadow-sm">
+        <p class="text-gray-600">Auto Escalated</p>
+        <p class="text-2xl font-bold text-amber-700 mt-1">{{ action_counts.auto_escalated|default:0 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIE CHART -->
+  <!-- PIE CHART -->
+<div class="bg-white rounded-xl shadow p-6 mt-6">
+  <h3 class="text-xl font-semibold mb-4">Requests Received Status Distribution</h3>
+
+  <div class="flex flex-col md:flex-row md:items-center gap-6">
+    <!-- small chart box -->
+    <div class="w-[260px] h-[260px] mx-auto">
+      <canvas id="receivedPieChart"></canvas>
+    </div>
+
+    <!-- extra info (urgent) -->
+    <div class="text-sm text-gray-700">
+      <p><b>Total Received:</b> {{ received_counts.total|default:0 }}</p>
+      <p><b>Urgent Received:</b> {{ received_counts.urgent|default:0 }}</p>
+      <p class="text-gray-500 mt-2">
+        *Urgent overlaps with statuses, so it is shown separately.
+      </p>
+    </div>
+  </div>
+</div>
+  <!-- RECEIVED TABLE -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h4 class="text-lg font-semibold mb-3">Received Requests (Details)</h4>
+    <div class="overflow-x-auto">
+      <table class="w-full border border-gray-200 text-sm">
+        <thead class="bg-gray-100 text-gray-700">
+          <tr>
+            <th class="p-3 text-left">Title</th>
+            <th class="p-3 text-left">Student</th>
+            <th class="p-3 text-left">Status</th>
+            <th class="p-3 text-left">Applied</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in received_qs %}
+          <tr class="border-t hover:bg-gray-50">
+            <td class="p-3">{{ r.title|default:"—" }}</td>
+            <td class="p-3">{{ r.student.username }}</td>
+            <td class="p-3">{{ r.status|upper }}</td>
+            <td class="p-3">{{ r.applied_at|date:"Y-m-d H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="p-3 text-gray-500">No received requests found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% endif %} {# end non-student #}
+  {% endif %} {# end target_profile #}
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const el = document.getElementById("receivedPieChart");
+  if (!el) return;
+
+  const pending = Number("{{ received_counts.pending|default:0 }}");
+  const approved = Number("{{ received_counts.approved|default:0 }}");
+  const rejected = Number("{{ received_counts.rejected|default:0 }}");
+
+  const values = [approved, rejected, pending];
+  const allZero = values.every(v => v === 0);
+  if (allZero) return;
+
+  new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels: ["Approved", "Rejected", "Pending"],
+      datasets: [{
+        data: values,
+        backgroundColor: ["#16a34a", "#dc2626", "#f59e0b"]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+
+  const el = document.getElementById("submittedPieChart");
+  if (!el) return;
+
+  const pending = Number("{{ submitted_counts.pending|default:0 }}");
+  const approved = Number("{{ submitted_counts.approved|default:0 }}");
+  const rejected = Number("{{ submitted_counts.rejected|default:0 }}");
+
+  const values = [approved, rejected, pending];
+  const allZero = values.every(v => v === 0);
+  if (allZero) return;
+
+  new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels: ["Approved", "Rejected", "Pending"],
+      datasets: [{
+        data: values,
+        backgroundColor: ["#16a34a", "#dc2626", "#f59e0b"]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Subjects</h2>
+        <p class="text-gray-500 text-sm mt-1">
+          {% if role in "staff proctor" %}
+            Manage your subjects and enter student marks
+          {% else %}
+            View subjects and analytics for your department
+          {% endif %}
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <a href="{% url 'marks_analytics' %}"
+           class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700">
+          📊 Analytics
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Subject — Staff/Proctor only -->
+  {% if role in "staff proctor" %}
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Add New Subject</h3>
+    <form method="POST" action="{% url 'add_subject' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {% csrf_token %}
+      <input type="text" name="name" placeholder="Subject Name" required
+             class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      <input type="text" name="code" placeholder="Subject Code (optional)"
+             class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      <select name="semester" required
+              class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        <option value="">Select Semester</option>
+        {% for val, label in semester_choices %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div class="flex items-center gap-4">
+        <button type="submit"
+                class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700">
+          + Add
+        </button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">
+      {% if role in "staff proctor" %}My Subjects
+      {% elif role == "hod" %}Department Subjects
+      {% else %}All Subjects
+      {% endif %}
+    </h3>
+
+    {% if subjects %}
+      <!-- Desktop -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-sm border border-gray-200">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="p-3 text-left">Subject</th>
+              <th class="p-3 text-left">Code</th>
+              <th class="p-3 text-left">Department</th>
+              <th class="p-3 text-left">Semester</th>
+              {% if role not in "staff proctor" %}
+              <th class="p-3 text-left">Added By</th>
+              {% endif %}
+              <th class="p-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sub in subjects %}
+            <tr class="border-t hover:bg-gray-50">
+              <td class="p-3 font-semibold text-gray-800">{{ sub.name }}</td>
+              <td class="p-3 text-gray-500">{{ sub.code|default:"—" }}</td>
+              <td class="p-3">{{ sub.department }}</td>
+              <td class="p-3">Sem {{ sub.semester }}</td>
+              {% if role not in "staff proctor" %}
+              <td class="p-3 text-gray-500 text-xs">
+                {{ sub.staff.get_full_name|default:sub.staff.username|default:"—" }}
+              </td>
+              {% endif %}
+              <td class="p-3 text-center">
+                <div class="flex justify-center gap-2 flex-wrap">
+                  {% if role in "staff proctor" %}
+                    <a href="{% url 'enter_marks' sub.id %}?exam=mid1"
+                       class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Mid 1</a>
+                    <a href="{% url 'enter_marks' sub.id %}?exam=mid2"
+                       class="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700">Mid 2</a>
+                    <a href="{% url 'enter_marks' sub.id %}?exam=lab"
+                       class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Lab</a>
+                    <form method="POST" action="{% url 'delete_subject' sub.id %}" class="inline">
+                      {% csrf_token %}
+                      <button type="submit" onclick="return confirm('Delete this subject?')"
+                              class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+                    </form>
+                  {% else %}
+                    <span class="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded">View Only</span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="md:hidden space-y-3">
+        {% for sub in subjects %}
+        <div class="border rounded-xl p-4 bg-gray-50">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="font-bold text-gray-800">{{ sub.name }}</p>
+              <p class="text-xs text-gray-500">
+                {{ sub.code|default:"No code" }} · {{ sub.department }} · Sem {{ sub.semester }}
+              </p>
+              {% if role not in "staff proctor" %}
+              <p class="text-xs text-gray-400 mt-1">
+                By: {{ sub.staff.get_full_name|default:sub.staff.username|default:"—" }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+          {% if role in "staff proctor" %}
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <a href="{% url 'enter_marks' sub.id %}?exam=mid1"
+               class="text-center py-2 text-xs bg-indigo-600 text-white rounded-lg font-semibold">Mid 1</a>
+            <a href="{% url 'enter_marks' sub.id %}?exam=mid2"
+               class="text-center py-2 text-xs bg-purple-600 text-white rounded-lg font-semibold">Mid 2</a>
+            <a href="{% url 'enter_marks' sub.id %}?exam=lab"
+               class="text-center py-2 text-xs bg-blue-600 text-white rounded-lg font-semibold">Lab</a>
+            <form method="POST" action="{% url 'delete_subject' sub.id %}">
+              {% csrf_token %}
+              <button type="submit" onclick="return confirm('Delete?')"
+                      class="w-full py-2 text-xs bg-red-600 text-white rounded-lg font-semibold">Delete</button>
+            </form>
+          </div>
+          {% else %}
+          <div class="mt-3">
+            <span class="px-3 py-1 text-xs bg-gray-100 text-gray-500 rounded-lg">View Only</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <div class="text-center py-8">
+        <p class="text-gray-500">
+          {% if role in "staff proctor" %}
+            No subjects added yet. Add your first subject above.
+          {% else %}
+            No subjects found for this department.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

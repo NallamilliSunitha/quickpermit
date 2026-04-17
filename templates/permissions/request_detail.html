@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Request Details</h2>
+
+<p><b>Title:</b> {{ req.title }}</p>
+<p><b>Status:</b> {{ req.status }}</p>
+<p><b>From:</b> {{ req.from_date }}</p>
+<p><b>To:</b> {{ req.to_date }}</p>
+<p><b>Reason:</b> {{ req.reason }}</p>
+{% endblock %}

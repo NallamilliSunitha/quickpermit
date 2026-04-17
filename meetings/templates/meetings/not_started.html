@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto mt-16 bg-white rounded-xl shadow p-8 text-center">
+
+  <div class="text-5xl mb-4">⏳</div>
+  <h2 class="text-2xl font-bold text-gray-800 mb-3">Waiting for Host</h2>
+  <p class="text-gray-600 mb-4">The host has not started the meeting yet.<br>This page checks automatically every 10 seconds.</p>
+
+  <div class="bg-gray-50 border rounded-lg p-4 inline-block text-left mb-6">
+    <p><span class="font-semibold">Title:</span> {{ meeting.title }}</p>
+    <p><span class="font-semibold">Scheduled:</span> {{ meeting.scheduled_at|date:"d M Y, h:i A" }}</p>
+    <p><span class="font-semibold">Status:</span> {{ meeting.status|title }}</p>
+  </div>
+
+  {% if is_creator %}
+    <a href="{% url 'start_meeting' meeting.id %}"
+       class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition">
+      🚀 Start Meeting
+    </a>
+  {% else %}
+    <p class="text-sm text-gray-400 mb-4">You will automatically enter when host starts.</p>
+    <div class="flex justify-center gap-1">
+      <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+      <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div>
+      <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:0.4s"></div>
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+// Auto check every 10 seconds if meeting started
+setInterval(() => {
+  fetch("{% url 'meeting_status' meeting.id %}")
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === "ongoing") {
+        window.location.href = "{% url 'join_meeting' meeting.id %}";
+      } else if (data.status === "completed") {
+        window.location.href = "{% url 'meeting_summary' meeting.id %}";
+      }
+    });
+}, 10000);
+</script>
+{% endblock %}

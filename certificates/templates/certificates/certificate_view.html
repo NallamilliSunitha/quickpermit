@@ -1,0 +1,577 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<style>
+  :root{
+    --ink:#0f172a;
+    --muted:#475569;
+    --line:#e2e8f0;
+    --gold:#b68b2c;
+    --paper:#ffffff;
+  }
+
+  .wrap{
+    max-width: 980px;
+    margin: 22px auto;
+  }
+
+  .cert{
+    position: relative;
+    background: var(--paper);
+    border-radius: 14px;
+    padding: 48px 56px;
+    box-shadow: 0 18px 40px rgba(2,6,23,.10);
+    overflow: hidden;
+  }
+
+  .cert::before{
+    content:"";
+    position:absolute;
+    inset: 18px;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    pointer-events:none;
+  }
+  .cert::after{
+    content:"";
+    position:absolute;
+    inset: 8px;
+    border: 8px solid #0b1220;
+    border-radius: 12px;
+    pointer-events:none;
+    opacity:.95;
+  }
+
+  .wm{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:.055;
+    background:
+      radial-gradient(circle at 20% 30%, #0f172a 0 2px, transparent 3px) 0 0/28px 28px,
+      radial-gradient(circle at 70% 60%, #0f172a 0 2px, transparent 3px) 0 0/34px 34px;
+    mask-image: radial-gradient(circle at 50% 45%, black 0 60%, transparent 75%);
+  }
+
+  .wmtext{
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+    pointer-events:none;
+    opacity:.06;
+    transform: rotate(-18deg);
+    font-size: 86px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    color:#0f172a;
+    user-select:none;
+  }
+
+  .top{
+    position:relative;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .brand{
+    display:flex;
+    gap: 14px;
+    align-items:center;
+  }
+
+  .logo{
+    width:52px; height:52px;
+    border-radius:999px;
+    border:2px solid var(--gold);
+    display:grid; place-items:center;
+    font-weight:900;
+    color:var(--gold);
+    letter-spacing:1px;
+  }
+
+  .brand h1{
+    margin:0;
+    font-size: 28px;
+    color: var(--ink);
+    letter-spacing: .5px;
+    font-weight: 900;
+  }
+  .brand p{
+    margin:4px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .serial{
+    text-align:right;
+    min-width: 260px;
+  }
+  .serial .chip{
+    display:inline-block;
+    border:1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: #f8fafc;
+  }
+  .serial .chip div{
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .serial .chip b{
+    font-size: 14px;
+    color: var(--ink);
+    letter-spacing:.3px;
+  }
+
+  .title{
+    text-align:center;
+    margin: 18px 0 12px;
+  }
+  .title .t1{
+    font-size: 14px;
+    color: var(--gold);
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .title .t2{
+    margin-top: 10px;
+    font-size: 44px;
+    font-weight: 900;
+    color: var(--ink);
+    letter-spacing: 1px;
+  }
+  .title .t3{
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .rule{
+    height:1px;
+    background: linear-gradient(90deg, transparent, var(--line), transparent);
+    margin: 22px 0;
+  }
+
+  .info{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 18px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .info .row{
+    display:flex;
+    gap: 8px;
+    align-items:baseline;
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 8px;
+  }
+  .info .row span{
+    color: var(--muted);
+    min-width: 135px;
+    font-weight: 700;
+  }
+  .info .row b{
+    font-weight: 800;
+  }
+
+  .text{
+    margin-top: 18px;
+    font-size: 16px;
+    line-height: 1.85;
+    color: var(--ink);
+    padding: 18px 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #ffffff;
+  }
+
+  .seal{
+    position:absolute;
+    top: 210px;
+    right: 64px;
+    width: 110px;
+    height: 110px;
+    border-radius: 999px;
+    border: 3px solid rgba(182,139,44,.7);
+    background:
+      radial-gradient(circle at 30% 30%, rgba(182,139,44,.35), transparent 55%),
+      radial-gradient(circle at 70% 70%, rgba(182,139,44,.25), transparent 55%);
+    display:grid;
+    place-items:center;
+    box-shadow: 0 10px 20px rgba(182,139,44,.15);
+  }
+  .seal div{
+    width: 84px;
+    height: 84px;
+    border-radius: 999px;
+    border: 2px dashed rgba(182,139,44,.9);
+    display:grid;
+    place-items:center;
+    color: var(--gold);
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align:center;
+    padding: 10px;
+  }
+
+  /* ── FOOTER ── */
+  .foot{
+    margin-top: 28px;
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: end;
+    border-top: 2px solid var(--line);
+    padding-top: 18px;
+  }
+
+  /* Signature */
+  .sigbox{
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+  }
+  .sig-label{
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .sig-name{
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .sig-date{
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .sigimg{
+    height: 60px;
+    max-width: 200px;
+    object-fit: contain;
+    display:block;
+    margin-bottom: 8px;
+  }
+  .sigline{
+    border-top: 1.5px solid #94a3b8;
+    padding-top: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  /* QR */
+  .qr{
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 10px;
+    background: #f8fafc;
+    text-align: center;
+  }
+  .qr h5{
+    margin: 0 0 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+  }
+  .qr .url{
+    font-size: 10px;
+    color: #334155;
+    word-break: break-all;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .qr img{
+    width: 110px;
+    height: 110px;
+    margin: 0 auto;
+    border-radius: 8px;
+    background: white;
+    padding: 6px;
+    display: block;
+  }
+
+  /* Stamp */
+  .stamp{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 140px;
+    border-radius: 14px;
+    border: 2px dashed #cbd5e1;
+    background: #fff;
+    overflow: hidden;
+  }
+  .stamp img{
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+  }
+  .stamp span{
+    font-size: 11px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  .actions{
+    max-width: 980px;
+    margin: 14px auto;
+    display:flex;
+    justify-content:flex-end;
+    gap: 10px;
+  }
+  .btn{
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-weight: 900;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .primary{ background:#4f46e5; color:#fff; }
+  .primary:hover{ background:#4338ca; }
+  .ghost{ background:#e2e8f0; color:#0f172a; text-decoration:none; display:inline-flex; align-items:center; }
+  .ghost:hover{ background:#cbd5e1; }
+
+  /* ── Mobile Screen ── */
+  @media (max-width: 768px) {
+    .wrap { margin: 8px; }
+    .cert { padding: 22px 18px; border-radius: 10px; }
+    .cert::before { inset: 10px; }
+    .cert::after { inset: 4px; border-width: 5px; }
+    .top { flex-direction: column; gap: 10px; }
+    .serial { text-align: left; min-width: unset; }
+    .brand h1 { font-size: 20px; }
+    .title .t2 { font-size: 26px; }
+    .info { grid-template-columns: 1fr; }
+    .seal { position: static; margin: 14px auto; width: 80px; height: 80px; }
+    .seal div { width: 62px; height: 62px; font-size: 9px; }
+    .foot { grid-template-columns: 1fr; gap: 16px; }
+    .qr img { width: 100px; height: 100px; }
+    .stamp { height: 120px; }
+    .stamp img { width: 100px; height: 100px; }
+    .sigimg { max-width: 160px; }
+    .wmtext { font-size: 40px; }
+    .actions { margin: 10px 8px; flex-direction: column; }
+    .btn { width: 100%; text-align: center; justify-content: center; }
+  }
+
+  /* ── Print / Save PDF ── */
+  @media print {
+    header, footer, nav, .actions { display:none !important; }
+    body { background:#fff !important; margin:0 !important; padding:0 !important; }
+
+    @page {
+      size: A4 portrait;
+      margin: 6mm;
+    }
+
+    html {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .wrap {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .cert {
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      padding: 16px 22px !important;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Fonts */
+    .title .t2   { font-size: 28px !important; }
+    .title .t1   { font-size: 11px !important; }
+    .title .t3   { font-size: 11px !important; }
+    .title       { margin: 8px 0 6px !important; }
+    .text        { font-size: 13px !important; padding: 10px 12px !important; margin-top: 10px !important; line-height:1.55 !important; }
+    .brand h1    { font-size: 20px !important; }
+    .brand p     { font-size: 10px !important; }
+
+    /* Info */
+    .info        { font-size: 11px !important; gap: 5px 10px !important; }
+    .info .row   { padding-bottom: 4px !important; }
+    .info .row span { min-width: 100px !important; }
+
+    /* Spacing */
+    .rule        { margin: 8px 0 !important; }
+    .top         { margin-bottom: 8px !important; }
+
+    /* Footer */
+    .foot {
+      margin-top: 12px !important;
+      padding-top: 12px !important;
+      gap: 12px !important;
+      grid-template-columns: 1fr 160px 130px !important;
+      align-items: end !important;
+    }
+
+    /* Seal */
+    .seal        { top: 150px !important; right: 30px !important; width: 80px !important; height: 80px !important; }
+    .seal div    { width: 62px !important; height: 62px !important; font-size: 8px !important; }
+
+    /* QR */
+    .qr          { padding: 8px 6px !important; }
+    .qr img      { width: 90px !important; height: 90px !important; padding: 4px !important; }
+    .qr h5       { font-size: 9px !important; }
+    .qr .url     { font-size: 9px !important; }
+
+    /* Stamp */
+    .stamp       { height: 110px !important; border-radius: 10px !important; }
+    .stamp img   { width: 100px !important; height: 100px !important; }
+    .stamp span  { font-size: 9px !important; }
+
+    /* Signature */
+    .sigimg      { height: 44px !important; max-width: 140px !important; margin-bottom: 6px !important; }
+    .sigline     { font-size: 9px !important; padding-top: 4px !important; }
+    .sig-name    { font-size: 13px !important; }
+    .sig-date    { font-size: 9px !important; }
+    .sig-label   { font-size: 9px !important; }
+
+    /* Watermark */
+    .wmtext      { opacity: 0.04 !important; font-size: 55px !important; }
+
+    /* Serial */
+    .serial .chip b   { font-size: 11px !important; }
+    .serial .chip div { font-size: 9px !important; }
+    .serial      { min-width: unset !important; }
+
+    /* Logo */
+    .logo        { width: 38px !important; height: 38px !important; font-size: 11px !important; }
+  }
+
+  /* ── Mobile Print fix ── */
+  @media print and (max-width: 768px) {
+    .cert {
+      transform: scale(0.80);
+      transform-origin: top left;
+      width: 125% !important;
+    }
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="cert">
+    <div class="wm"></div>
+    <div class="wmtext">CAMPUSIQ</div>
+
+    <!-- TOP -->
+    <div class="top">
+      <div class="brand">
+        <div class="logo">CI</div>
+        <div>
+          <h1>CAMPUSIQ</h1>
+          <p>Digital Verification Enabled • Official Record</p>
+        </div>
+      </div>
+      <div class="serial">
+        <div class="chip">
+          <div>Certificate Number</div>
+          <b>{{ issued.cert_code|default:req.request_code }}</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- TITLE -->
+    <div class="title">
+      <div class="t1">Official Certificate</div>
+      <div class="t2">{{ req.get_cert_type_display }}</div>
+      <div class="t3">This document is valid only with QR verification.</div>
+    </div>
+
+    <div class="rule"></div>
+
+    <!-- INFO -->
+    <div class="info">
+      <div class="row"><span>Student Name</span><b>{{ req.student.get_full_name|default:req.student.username }}</b></div>
+      <div class="row"><span>Roll Number</span><b>{{ req.student.username }}</b></div>
+      <div class="row"><span>Purpose</span><b>{{ req.purpose|default:"—" }}</b></div>
+      <div class="row"><span>Issued On</span><b>{{ issued.approved_at|date:"Y-m-d" }}</b></div>
+    </div>
+
+    <!-- SEAL -->
+    <div class="seal">
+      <div>Verified<br>Official</div>
+    </div>
+
+    <!-- BODY TEXT -->
+    <div class="text">{{ wording }}</div>
+
+    <!-- FOOTER: Signature | QR | Stamp -->
+    <div class="foot">
+
+      <!-- LEFT: Signature -->
+      <div class="sigbox">
+        <div class="sig-label">Approved By</div>
+        <div class="sig-name">
+          {% if issued.approved_by %}
+            {{ issued.approved_by.get_full_name|default:issued.approved_by.username }}
+          {% else %}—{% endif %}
+        </div>
+        <div class="sig-date">
+          {% if issued.approved_at %}{{ issued.approved_at|date:"Y-m-d H:i" }}{% endif %}
+        </div>
+        {% if approver_profile and approver_profile.signature %}
+          <img class="sigimg" src="{{ approver_profile.signature.url }}" alt="Signature">
+        {% endif %}
+        <div class="sigline">Authorized Signature</div>
+      </div>
+
+      <!-- CENTER: QR -->
+      <div class="qr">
+        <h5>Verify Certificate</h5>
+        <div class="url">{{ verify_url }}</div>
+        {% if qr_url %}
+          <img src="{{ qr_url }}" alt="QR Code">
+        {% else %}
+          <div style="margin-top:10px;color:#ef4444;font-weight:800;font-size:12px;">QR not available</div>
+        {% endif %}
+      </div>
+
+      <!-- RIGHT: Stamp -->
+      <div class="stamp">
+        {% if approver_profile and approver_profile.stamp %}
+          <img src="{{ approver_profile.stamp.url }}" alt="Stamp">
+        {% else %}
+          <span>OFFICIAL<br>STAMP</span>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" onclick="window.print()">🖨 Print / Save PDF</button>
+    <a class="btn ghost" href="{% url 'my_certificates' %}">← Back</a>
+  </div>
+
+</div>
+
+{% endblock %}

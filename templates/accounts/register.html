@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+  <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+    <h1 class="text-2xl font-bold text-gray-800 text-center mb-2">Create Your Account</h1>
+    <p class="text-center text-gray-500 mb-6">Register as per your role</p>
+
+    {% if messages %}
+      <div class="mb-4 space-y-2">
+        {% for message in messages %}
+          <div class="p-2 rounded bg-red-100 text-red-800">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+
+      <!-- User Details -->
+      <div>
+        <label class="block text-gray-700">First Name</label>
+        <input type="text" name="first_name" required
+               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Last Name</label>
+        <input type="text" name="last_name" required
+               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Username / Roll Number</label>
+        <input type="text" name="username" required
+               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Email</label>
+        <input type="email" name="email" required
+               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Password</label>
+        <input type="password" name="password" required
+               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <!-- ROLE -->
+      <div>
+        <label class="block text-gray-700">Role</label>
+        <select id="roleSelect" name="role"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="student">STUDENT</option>
+          <option value="staff">STAFF</option>
+          <option value="hod">HOD</option>
+          <option value="dean">DEAN</option>
+          <option value="principal">PRINCIPAL</option>
+        </select>
+      </div>
+
+      <!-- COLLEGE (ALL ROLES) -->
+      <div id="collegeBox">
+        <label class="block text-gray-700">College</label>
+        <select name="college"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">-- Select College --</option>
+          <option value="Aditya University">Aditya University</option>
+          <option value="Aditya College of Engineering and Technology">Aditya College of Engineering and Technology</option>
+          <option value="Aditya College of Engineering">Aditya College of Engineering</option>
+        </select>
+      </div>
+
+      <!-- STAFF -> Proctor toggle -->
+      <div id="proctorBox" class="hidden">
+        <label class="inline-flex items-center gap-2 text-gray-700">
+          <input type="checkbox" name="is_proctor" class="h-4 w-4">
+          Is this staff also a Proctor?
+        </label>
+        <p class="text-xs text-gray-500 mt-1">If checked, we save role as PROCTOR.</p>
+      </div>
+
+      <!-- Dean Type -->
+      <div id="deanTypeBox" class="hidden">
+        <label class="block text-gray-700">Dean Type</label>
+        <select name="dean_type"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">-- Select Dean Type --</option>
+          <option value="Academic Affairs">Academic Affairs</option>
+          <option value="R&D">R&D</option>
+          <option value="Student Affairs">Student Affairs</option>
+          <option value="Placements">Placements</option>
+        </select>
+      </div>
+
+      <!-- Department -->
+      <div id="deptBox">
+        <label class="block text-gray-700">Department</label>
+        <input type="text" name="department"
+               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <!-- Semester (Students only) -->
+      <div id="semesterBox" class="hidden">
+        <label class="block text-gray-700">Semester</label>
+        <select name="semester"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">Select Semester</option>
+          <option value="1">Semester 1</option>
+          <option value="2">Semester 2</option>
+          <option value="3">Semester 3</option>
+          <option value="4">Semester 4</option>
+          <option value="5">Semester 5</option>
+          <option value="6">Semester 6</option>
+          <option value="7">Semester 7</option>
+          <option value="8">Semester 8</option>
+        </select>
+      </div>
+
+      <!-- Section (Students only) -->
+      <div id="sectionBox" class="hidden">
+        <label class="block text-gray-700">Section</label>
+        <select name="section"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">Select Section</option>
+          <option value="A">Section A</option>
+          <option value="B">Section B</option>
+          <option value="C">Section C</option>
+          <option value="D">Section D</option>
+        </select>
+      </div>
+
+      <button type="submit"
+              class="w-full bg-indigo-600 text-white font-semibold py-2 rounded hover:bg-indigo-700 transition">
+        Register
+      </button>
+    </form>
+
+    <p class="mt-4 text-center text-gray-600">
+      Already have an account?
+      <a href="{% url 'login_home' %}" class="text-indigo-600 font-semibold hover:underline">Login</a>
+    </p>
+  </div>
+</div>
+
+<script>
+  const roleSelect  = document.getElementById("roleSelect");
+  const deptBox     = document.getElementById("deptBox");
+  const deanTypeBox = document.getElementById("deanTypeBox");
+  const proctorBox  = document.getElementById("proctorBox");
+  const semesterBox = document.getElementById("semesterBox");
+  const sectionBox  = document.getElementById("sectionBox");
+
+  function toggleFields() {
+    const role = roleSelect.value;
+
+    const isStudent   = (role === "student");
+    const isDean      = (role === "dean");
+    const isPrincipal = (role === "principal");
+    const needsDept   = ["student", "staff", "hod", "proctor"].includes(role);
+
+    deptBox.classList.toggle("hidden",     (!needsDept || isDean || isPrincipal));
+    deanTypeBox.classList.toggle("hidden", !isDean);
+    proctorBox.classList.toggle("hidden",  role !== "staff");
+    semesterBox.classList.toggle("hidden", !isStudent);
+    sectionBox.classList.toggle("hidden",  !isStudent);
+  }
+
+  roleSelect.addEventListener("change", toggleFields);
+  toggleFields();
+</script>
+
+{% endblock %}

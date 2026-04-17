@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusIQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      input, button, select, textarea { max-width: 100%; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- Header / Navbar -->
+<header class="bg-indigo-600 text-white p-4 shadow-md">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold">QuickPermit</h1>
+
+       <nav class="flex items-center space-x-4">
+
+    <!-- Home -->
+    <a href="/" class="px-3 hover:underline">Home</a>
+
+    {% if user.is_authenticated %}
+
+        <!-- 🔔 Notifications -->
+        <div class="relative">
+            <a href="{% url 'notifications_page' %}" class="text-xl" onclick="markAllRead()">🔔</a>
+            <span id="notif-badge"
+                  class="hidden absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                0
+            </span>
+        </div>
+
+        <!-- 👤 Avatar -->
+        <a href="{% url 'profile_page' %}">
+  <img
+    src="{% if user.userprofile.photo %}{{ user.userprofile.photo.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&background=ffffff&color=4f46e5{% endif %}"
+    class="w-9 h-9 rounded-full object-cover border-2 border-white shadow"
+    onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=ffffff&color=4f46e5'"
+  >
+</a>
+        <!-- Logout -->
+        <form method="post" action="{% url 'logout' %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="px-3 hover:underline">Logout</button>
+        </form>
+
+    {% else %}
+
+        <a href="{% url 'login_home' %}" class="px-3 hover:underline">Login</a>
+
+    {% endif %}
+
+</nav>
+    </div>
+</header>
+
+<!-- Page content -->
+<main class="max-w-7xl mx-auto px-2 py-4 sm:p-6">
+
+    <!-- ✅ Messages (ADD HERE) -->
+    {% if messages %}
+      <div class="max-w-4xl mx-auto mb-4">
+        {% for message in messages %}
+          <div class="bg-green-100 text-green-800 px-4 py-2 rounded mb-2 shadow">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="bg-gray-200 text-gray-700 p-4 text-center mt-10">
+    &copy; 2026 QuickPermit. All rights reserved.
+</footer>
+
+<!-- 🔔 Notification Script -->
+<script>
+{% if user.is_authenticated %}
+
+let lastNotificationId = null;   // ✅ FIXED
+let firstLoad = true;
+
+function checkNotifications() {
+    fetch("/accounts/api/unread-notifications/")
+    .then(res => res.json())
+    .then(data => {
+
+        let badge = document.getElementById("notif-badge");
+
+        // ✅ Update badge properly
+        if (badge) {
+            if (data.count > 0) {
+                badge.innerText = data.count;
+                badge.classList.remove("hidden");
+            } else {
+                badge.classList.add("hidden");
+            }
+        }
+
+        // ✅ First load → don't show old toasts
+        if (firstLoad) {
+            if (data.notifications.length > 0) {
+                lastNotificationId = data.notifications[0].id;
+            }
+            firstLoad = false;
+            return;
+        }
+
+        // ✅ Show only NEW notifications
+        data.notifications.forEach(n => {
+            if (lastNotificationId === null || n.id > lastNotificationId) {
+                showToast(n.title, n.message, n.link);
+            }
+        });
+
+        // ✅ Update latest ID
+        if (data.notifications.length > 0) {
+            lastNotificationId = data.notifications[0].id;
+        }
+    })
+    .catch(err => console.log("ERROR:", err));
+}
+
+
+// 🔔 Toast popup
+function showToast(title, message, link) {
+    let toast = document.createElement("div");
+
+    toast.className = "fixed top-5 right-5 bg-indigo-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 cursor-pointer transition";
+
+    toast.innerHTML = `<b>${title}</b><br>${message}`;
+
+    toast.onclick = function () {
+        if (link) {
+            window.location.href = link;
+        }
+    };
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 5000);
+}
+
+
+// 🔁 Run polling
+setInterval(checkNotifications, 5000);
+checkNotifications();
+
+{% endif %}
+
+
+function markAllRead() {
+    fetch("/accounts/api/mark-all-read/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}"
+        }
+    });
+}
+</script>
+</body>
+</html>

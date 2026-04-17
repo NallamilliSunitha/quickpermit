@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-4xl mx-auto mt-10 bg-white shadow-xl rounded-2xl p-8">
+
+  <!-- Form START (moved up) -->
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
+
+
+<!-- 🔥 FIX: file input INSIDE form -->
+<input type="file" name="photo" id="photoInput" class="hidden">
+
+<!-- Header -->
+<div class="flex flex-col sm:flex-row items-center gap-6">
+
+  <!-- Profile Photo -->
+  <div class="relative">
+    <img id="profilePreview"
+         src="{% if profile.photo %}{{ profile.photo.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&background=6366f1&color=fff{% endif %}"
+         class="w-32 h-32 rounded-full object-cover border-4 border-indigo-100 shadow">
+
+    <button type="button" id="changePhotoBtn"
+            class="hidden absolute bottom-1 right-1 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full shadow">
+      ✏️
+    </button>
+  </div>
+
+  <!-- User Info -->
+  <div class="text-center sm:text-left">
+    <h2 class="text-2xl font-bold text-gray-800">
+      {{ request.user.first_name }} {{ request.user.last_name }}
+    </h2>
+    <p class="text-gray-500">{{ request.user.email }}</p>
+    <p class="text-sm text-indigo-500 font-medium capitalize mt-1">
+      {{ profile.role }}
+    </p>
+  </div>
+
+  <!-- Edit Button -->
+  <div class="sm:ml-auto">
+    <button type="button" id="editBtn"
+            class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-700 transition">
+      Edit Profile
+    </button>
+  </div>
+
+</div>
+
+<!-- Fields -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+
+  <div>
+    <label class="label">First Name</label>
+    <input type="text" name="first_name"
+           value="{{ request.user.first_name }}"
+           class="input-field" readonly>
+  </div>
+
+  <div>
+    <label class="label">Last Name</label>
+    <input type="text" name="last_name"
+           value="{{ request.user.last_name }}"
+           class="input-field" readonly>
+  </div>
+
+  <div>
+    <label class="label">Email</label>
+    <input type="email" name="email"
+           value="{{ request.user.email }}"
+           class="input-field" readonly>
+  </div>
+
+  <div>
+    <label class="label">Roll Number</label>
+    <input type="text"
+           value="{% if profile.roll_number %}{{ profile.roll_number }}{% else %}{{ request.user.username }}{% endif %}"
+           class="input-field bg-gray-100 cursor-not-allowed"
+           readonly>
+  </div>
+
+  <div>
+    <label class="label">Department</label>
+    <input type="text" name="department"
+           value="{{ profile.department }}"
+           class="input-field" readonly>
+  </div>
+
+  <div>
+    <label class="label">College</label>
+    <select name="college" class="input-field" disabled>
+      <option value="Aditya University" {% if profile.college == "Aditya University" %}selected{% endif %}>Aditya University</option>
+      <option value="Aditya College of Engineering and Technology" {% if profile.college == "Aditya College of Engineering and Technology" %}selected{% endif %}>ACET</option>
+      <option value="Aditya College of Engineering" {% if profile.college == "Aditya College of Engineering" %}selected{% endif %}>ACE</option>
+    </select>
+  </div>
+
+  {% if profile.role == "student" %}
+  <div>
+    <label class="label">Semester</label>
+    <input type="text" name="semester"
+           value="{{ profile.semester }}"
+           class="input-field" readonly>
+  </div>
+
+  <div>
+    <label class="label">Section</label>
+    <input type="text" name="section"
+           value="{{ profile.section }}"
+           class="input-field" readonly>
+  </div>
+  {% endif %}
+
+  {% if profile.role == "dean" %}
+  <div>
+    <label class="label">Dean Type</label>
+    <input type="text" name="dean_type"
+           value="{{ profile.dean_type }}"
+           class="input-field" readonly>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Save Button -->
+<div class="text-right">
+  <button id="saveBtn"
+          class="hidden bg-green-600 text-white px-6 py-2 rounded-lg shadow hover:bg-green-700 transition">
+    Save Changes
+  </button>
+</div>
+
+
+  </form>
+  <!-- Form END -->
+
+</div>
+
+<!-- Styles -->
+
+<style>
+  .label {
+    display: block;
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 4px;
+  }
+
+  .input-field {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    transition: 0.2s;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    background-color: white;
+  }
+</style>
+
+<!-- JS -->
+
+<script>
+  const editBtn = document.getElementById("editBtn");
+  const saveBtn = document.getElementById("saveBtn");
+  const inputs = document.querySelectorAll(".input-field");
+  const selects = document.querySelectorAll("select");
+  const changePhotoBtn = document.getElementById("changePhotoBtn");
+  const photoInput = document.getElementById("photoInput");
+  const profilePreview = document.getElementById("profilePreview");
+
+  editBtn.addEventListener("click", () => {
+    inputs.forEach(input => {
+      if (!input.classList.contains("bg-gray-100")) {
+        input.removeAttribute("readonly");
+      }
+    });
+
+    selects.forEach(select => select.removeAttribute("disabled"));
+
+    saveBtn.classList.remove("hidden");
+    changePhotoBtn.classList.remove("hidden");
+    editBtn.classList.add("hidden");
+  });
+
+  changePhotoBtn.addEventListener("click", () => {
+    photoInput.click();
+  });
+
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files[0];
+    if (file) {
+      profilePreview.src = URL.createObjectURL(file);
+    }
+  });
+</script>
+
+{% endblock %}

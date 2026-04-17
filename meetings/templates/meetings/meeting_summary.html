@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  .summary-wrap { font-family: 'DM Sans', sans-serif; background: #f0f2f8; min-height: 100vh; padding: 28px 16px; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+
+  .sum-header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%); border-radius: 16px; padding: 32px; color: white; position: relative; overflow: hidden; }
+  .sum-header::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.05); }
+  .sum-header::after  { content:''; position:absolute; bottom:-60px; right:60px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.04); }
+  .sum-header h2 { font-size: 26px; font-weight: 700; margin: 0 0 6px; }
+  .sum-header .meta { font-size: 14px; color: #c7d2fe; display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .badge-done { background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(134,239,172,0.3); padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display:inline-block; margin-bottom:8px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media(max-width:768px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }
+  .stat-card { border-radius: 14px; padding: 22px; text-align: center; }
+  .stat-card .num { font-size: 38px; font-weight: 700; line-height: 1; }
+  .stat-card .lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; opacity: 0.65; }
+  .stat-invited  { background: #eef2ff; } .stat-invited  .num { color: #4338ca; }
+  .stat-attended { background: #f0fdf4; } .stat-attended .num { color: #16a34a; }
+  .stat-early    { background: #fffbeb; } .stat-early    .num { color: #d97706; }
+  .stat-absent   { background: #fef2f2; } .stat-absent   .num { color: #dc2626; }
+
+  /* Tabs */
+  .tab-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
+  .tab-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: #f1f5f9; color: #64748b; transition: all 0.2s; }
+  .tab-btn:hover { background: #e2e8f0; color: #334155; }
+  .tab-btn.active { background: #4338ca; color: white; }
+  .tab-btn .tab-icon { font-size: 15px; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .sec-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid #f1f5f9; }
+  .sec-head h3 { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .sec-icon { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+
+  .att-table { width: 100%; border-collapse: collapse; }
+  .att-table thead tr { background: #f8fafc; }
+  .att-table th { padding: 10px 20px; text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+  .att-table td { padding: 14px 20px; border-top: 1px solid #f1f5f9; vertical-align: middle; }
+  .att-table tr:hover td { background: #fafbff; }
+  .avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .prog-bar { height: 5px; background: #e2e8f0; border-radius: 3px; width: 80px; margin-top: 5px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#6366f1,#8b5cf6); }
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-excellent { background: #dcfce7; color: #15803d; }
+  .badge-good      { background: #dbeafe; color: #1d4ed8; }
+  .badge-low       { background: #fef9c3; color: #a16207; }
+  .badge-absent    { background: #fee2e2; color: #b91c1c; }
+
+  .transcript-box { padding: 20px 22px; max-height: 460px; overflow-y: auto; }
+  .t-entry { display: flex; gap: 14px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+  .t-entry:last-child { border-bottom: none; }
+  .t-meta { flex-shrink: 0; text-align: right; min-width: 80px; }
+  .t-speaker { font-size: 11px; font-weight: 700; color: #6366f1; text-transform: uppercase; }
+  .t-time { font-size: 10px; color: #94a3b8; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .t-text { font-size: 14px; color: #334155; line-height: 1.6; }
+
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 22px; border-top: 1px solid #f1f5f9; }
+  .info-lbl { font-size: 13px; color: #94a3b8; font-weight: 500; }
+  .info-val { font-size: 13px; color: #1e293b; font-weight: 600; }
+
+  .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: #4338ca; color: white; padding: 8px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s; }
+  .btn-primary:hover { background: #3730a3; color: white; }
+  .btn-ghost { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.12); color: white; padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s; }
+  .btn-ghost:hover { background: rgba(255,255,255,0.2); color: white; }
+  .btn-dl { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; border-radius: 9px; background: #4338ca; color: white; font-size: 13px; font-weight: 600; text-decoration: none; margin-top: 12px; transition: background 0.2s; }
+  .btn-dl:hover { background: #3730a3; color: white; }
+
+  .wb-img { width: 100%; border-radius: 10px; border: 1px solid #e2e8f0; display: block; }
+
+  .ai-summary-box { padding: 24px 22px; line-height: 1.8; color: #334155; font-size: 14px; }
+  .ai-summary-box h2 { font-size: 15px; font-weight: 700; color: #1e293b; margin: 18px 0 8px; }
+  .ai-summary-box h2:first-child { margin-top: 0; }
+  .ai-summary-box ul { padding-left: 20px; margin: 6px 0; }
+  .ai-summary-box ul li { margin-bottom: 4px; }
+  .ai-summary-box p { margin: 6px 0; }
+  .ai-badge { font-size: 11px; background: #f3e8ff; color: #7c3aed; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+
+  /* Download tab */
+  .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 24px; }
+  @media(max-width:600px) { .dl-grid { grid-template-columns: 1fr; } }
+  .dl-card { border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px; text-align: center; background: #fafbff; transition: box-shadow 0.2s; }
+  .dl-card:hover { box-shadow: 0 4px 12px rgba(67,56,202,0.1); }
+  .dl-card .dl-icon { font-size: 36px; margin-bottom: 12px; }
+  .dl-card h4 { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0 0 6px; }
+  .dl-card p { font-size: 13px; color: #94a3b8; margin: 0 0 16px; }
+  .dl-card a, .dl-card button { display: inline-flex; align-items: center; gap: 6px; background: #4338ca; color: white; padding: 9px 20px; border-radius: 9px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s; }
+  .dl-card a:hover, .dl-card button:hover { background: #3730a3; color: white; }
+</style>
+
+<div class="summary-wrap">
+<div class="max-w-5xl mx-auto space-y-5">
+
+  <!-- HEADER -->
+  <div class="sum-header">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; position:relative; z-index:1;">
+      <div>
+        <span class="badge-done">✓ Completed</span>
+        <h2>{{ meeting.title }}</h2>
+        <div class="meta">
+          <span>📁 {{ meeting.department }}</span>
+          <span>📅 {{ meeting.scheduled_at|date:"d M Y" }}</span>
+          <span>🕐 {{ meeting.started_at|time:"h:i A"|default:"—" }} – {{ meeting.ended_at|time:"h:i A"|default:"—" }}</span>
+          <span>🎓 {{ meeting.meeting_type|title }}</span>
+        </div>
+      </div>
+      <a href="{% url 'meeting_history' %}" class="btn-ghost">← Back</a>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-grid">
+    <div class="stat-card stat-invited">
+      <div class="num">{{ total_participants }}</div>
+      <div class="lbl">Invited</div>
+    </div>
+    <div class="stat-card stat-attended">
+      <div class="num">{{ attended_count }}</div>
+      <div class="lbl">Attended</div>
+    </div>
+    <div class="stat-card stat-early">
+      <div class="num">{{ left_early_count }}</div>
+      <div class="lbl">Left Early</div>
+    </div>
+    <div class="stat-card stat-absent">
+      <div class="num">{{ absent_count }}</div>
+      <div class="lbl">Absent</div>
+    </div>
+  </div>
+
+  <!-- MAIN TABBED CARD -->
+  <div class="card">
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('attendance')">
+        <span class="tab-icon">👥</span> Attendance
+      </button>
+      <button class="tab-btn" onclick="switchTab('details')">
+        <span class="tab-icon">ℹ️</span> Meeting Info
+      </button>
+
+      {% if meeting.ai_summary %}
+      <button class="tab-btn" onclick="switchTab('summary')">
+        <span class="tab-icon">🤖</span> AI Summary
+      </button>
+      {% endif %}
+      <button class="tab-btn" onclick="switchTab('whiteboard')">
+        <span class="tab-icon">🎨</span> Whiteboard
+      </button>
+      <button class="tab-btn" onclick="switchTab('downloads')">
+        <span class="tab-icon">⬇️</span> Downloads
+      </button>
+    </div>
+
+    <!-- ATTENDANCE TAB -->
+    <div id="tab-attendance" class="tab-content active">
+      <div style="overflow-x:auto;">
+        <table class="att-table">
+          <thead>
+            <tr>
+              <th>Participant</th>
+              <th>Checkpoints</th>
+              <th>Status</th>
+              <th>Left Early</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in report_rows %}
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div class="avatar">{{ row.user.first_name|first|upper }}{{ row.user.last_name|first|upper }}</div>
+                  <div>
+                    <div style="font-weight:600; font-size:14px; color:#1e293b;">{{ row.user.get_full_name|default:row.user.username }}</div>
+                    <div style="font-size:12px; color:#94a3b8;">{{ row.user.username }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div style="font-size:13px; font-weight:600; color:#334155;">{{ row.count }} / {{ total_checkpoints }}</div>
+                <div class="prog-bar"><div class="prog-fill" style="width:{{ row.percent }}%;"></div></div>
+              </td>
+              <td>
+                {% if row.label == "Excellent" %}<span class="badge badge-excellent">Excellent</span>
+                {% elif row.label == "Good" %}<span class="badge badge-good">Good</span>
+                {% elif row.label == "Low" %}<span class="badge badge-low">Low</span>
+                {% else %}<span class="badge badge-absent">Absent</span>{% endif %}
+              </td>
+              <td>
+                {% if row.left_early %}
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span>⚠️</span>
+                    <div>
+                      <div style="font-size:12px; font-weight:600; color:#dc2626;">Left Early</div>
+                      {% if row.left_at %}<div style="font-size:11px; color:#94a3b8; font-family:'DM Mono',monospace;">{{ row.left_at|time:"h:i A" }}</div>{% endif %}
+                    </div>
+                  </div>
+                {% else %}
+                  <span style="color:#cbd5e1; font-size:18px;">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center; padding:40px; color:#94a3b8; font-size:14px;">No attendance data recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MEETING INFO TAB -->
+    <div id="tab-details" class="tab-content">
+      <div style="padding-bottom:8px;">
+        <div class="info-row" style="border-top:none;">
+          <span class="info-lbl">Type</span>
+          <span class="info-val">{{ meeting.meeting_type|title }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Department</span>
+          <span class="info-val">{{ meeting.department }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Created By</span>
+          <span class="info-val">{{ meeting.created_by.get_full_name|default:meeting.created_by.username }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Scheduled</span>
+          <span class="info-val">{{ meeting.scheduled_at|date:"d M Y, h:i A" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Started</span>
+          <span class="info-val">{{ meeting.started_at|time:"h:i A"|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Ended</span>
+          <span class="info-val">{{ meeting.ended_at|time:"h:i A"|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Duration</span>
+          <span class="info-val">{{ meeting.duration_minutes }} min</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Total Invited</span>
+          <span class="info-val">{{ total_participants }}</span>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- AI SUMMARY TAB -->
+    {% if meeting.ai_summary %}
+    <div id="tab-summary" class="tab-content">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid #f1f5f9;">
+        <span style="font-size:15px; font-weight:700; color:#1e293b;">🤖 AI Meeting Summary</span>
+        <span class="ai-badge">✨ Powered by Llama 3</span>
+      </div>
+      <div class="ai-summary-box" id="ai-summary-content">{{ meeting.ai_summary }}</div>
+    </div>
+    {% endif %}
+
+    <!-- WHITEBOARD TAB -->
+    <div id="tab-whiteboard" class="tab-content">
+      <div style="padding:20px;">
+        {% if whiteboard_image %}
+          <img src="{{ whiteboard_image }}" alt="Whiteboard" class="wb-img"/>
+          <a href="{% url 'download_whiteboard_pdf' meeting.id %}" class="btn-dl">
+            ⬇ Download Whiteboard PDF
+          </a>
+        {% else %}
+          <div style="text-align:center; padding:48px 10px; color:#94a3b8; font-size:13px;">
+            <div style="font-size:48px; margin-bottom:12px;">🎨</div>
+            No whiteboard content was recorded for this meeting.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- DOWNLOADS TAB -->
+    <div id="tab-downloads" class="tab-content">
+      <div class="dl-grid">
+
+        {% if is_creator %}
+        <div class="dl-card">
+          <div class="dl-icon">📊</div>
+          <h4>Attendance Report</h4>
+          <p>Download full attendance PDF with checkpoints and status</p>
+          <a href="{% url 'download_attendance_pdf' meeting.id %}">⬇ Download PDF</a>
+        </div>
+        {% endif %}
+
+
+        {% if whiteboard_image %}
+        <div class="dl-card">
+          <div class="dl-icon">🎨</div>
+          <h4>Whiteboard PDF</h4>
+          <p>Download all whiteboard pages as a PDF document</p>
+          <a href="{% url 'download_whiteboard_pdf' meeting.id %}">⬇ Download PDF</a>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script>
+function switchTab(name) {
+  // Hide all
+  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+
+  // Show selected
+  const content = document.getElementById("tab-" + name);
+  if (content) content.classList.add("active");
+
+  // Highlight button
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    if (btn.getAttribute("onclick") === `switchTab('${name}')`) {
+      btn.classList.add("active");
+    }
+  });
+}
+
+// Render AI summary markdown
+const summaryEl = document.getElementById("ai-summary-content");
+if (summaryEl) {
+  summaryEl.innerHTML = marked.parse(summaryEl.textContent);
+}
+
+function dlTranscript() {
+  const entries = document.querySelectorAll("#tc .t-entry");
+  let txt = "MEETING TRANSCRIPT\n";
+  txt += "Meeting: {{ meeting.title }}\n";
+  txt += "Date: {{ meeting.scheduled_at|date:'d M Y' }}\n\n";
+  txt += "=".repeat(50) + "\n\n";
+  entries.forEach(e => {
+    const sp = e.querySelector(".t-speaker")?.textContent?.trim() || "";
+    const tm = e.querySelector(".t-time")?.textContent?.trim() || "";
+    const tx = e.querySelector(".t-text")?.textContent?.trim() || "";
+    txt += `[${tm}] ${sp}\n${tx}\n\n`;
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([txt], {type:"text/plain"}));
+  a.download = "transcript_{{ meeting.id }}.txt";
+  a.click();
+}
+</script>
+
+{% endblock %}

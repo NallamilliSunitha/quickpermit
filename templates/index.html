@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .hero-bg {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .hero-bg::after {
+    content: '';
+    position: absolute;
+    bottom: -120px; left: -80px;
+    width: 350px; height: 350px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.03);
+  }
+  .module-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .module-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  }
+  .feature-card {
+    transition: transform 0.2s;
+  }
+  .feature-card:hover {
+    transform: translateY(-2px);
+  }
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-bg text-white">
+  <div class="max-w-6xl mx-auto px-6 py-20 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-semibold mb-6">
+          🎓 College Management System
+        </div>
+        <h1 class="text-5xl sm:text-6xl font-extrabold leading-tight">
+          Quick<span style="color:#a5f3fc;">Permit</span>
+        </h1>
+        <p class="mt-4 text-white/85 text-lg leading-relaxed">
+          A smart college management platform built for students, staff and management.
+          Permissions, Meetings, Certificates, Marks Analytics — all in one place.
+        </p>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3">
+          <a href="{% url 'login_home' %}"
+             class="inline-flex justify-center items-center px-7 py-3 rounded-xl bg-white text-indigo-700 font-bold shadow-lg hover:bg-indigo-50 transition text-base">
+            🚀 Login to QuickPermit
+          </a>
+          <a href="{% url 'register' %}"
+             class="inline-flex justify-center items-center px-7 py-3 rounded-xl bg-white/10 border border-white/30 text-white font-bold hover:bg-white/20 transition text-base">
+            Create Account
+          </a>
+        </div>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <span class="bg-white/10 border border-white/15 px-3 py-1.5 rounded-full text-sm">⚡ Auto Escalation</span>
+          <span class="bg-white/10 border border-white/15 px-3 py-1.5 rounded-full text-sm">📧 Email Alerts</span>
+          <span class="bg-white/10 border border-white/15 px-3 py-1.5 rounded-full text-sm">🤖 AI Meeting Summary</span>
+          <span class="bg-white/10 border border-white/15 px-3 py-1.5 rounded-full text-sm">📊 Performance Analytics</span>
+          <span class="bg-white/10 border border-white/15 px-3 py-1.5 rounded-full text-sm">⚠️ At-Risk Alerts</span>
+        </div>
+      </div>
+
+      <!-- Stats Card -->
+      <div class="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
+        <div class="bg-white rounded-2xl p-6 shadow-xl text-gray-800">
+          <h3 class="text-lg font-bold text-gray-800 mb-5">Platform Highlights</h3>
+          <div class="grid grid-cols-2 gap-4 mb-5">
+            <div class="bg-indigo-50 rounded-xl p-4 text-center">
+              <div class="stat-num text-indigo-600">6</div>
+              <div class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wide">User Roles</div>
+            </div>
+            <div class="bg-green-50 rounded-xl p-4 text-center">
+              <div class="stat-num text-green-600">4</div>
+              <div class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wide">Modules</div>
+            </div>
+            <div class="bg-purple-50 rounded-xl p-4 text-center">
+              <div class="stat-num text-purple-600">7</div>
+              <div class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wide">Departments</div>
+            </div>
+            <div class="bg-amber-50 rounded-xl p-4 text-center">
+              <div class="stat-num text-amber-600">AI</div>
+              <div class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wide">Powered</div>
+            </div>
+          </div>
+          <a href="{% url 'login_home' %}"
+             class="w-full inline-flex justify-center items-center px-5 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition">
+            Get Started →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Modules Section -->
+<section class="bg-gray-50 py-16">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-extrabold text-gray-900">Everything in One Platform</h2>
+      <p class="mt-3 text-gray-500 max-w-xl mx-auto">
+        Four powerful modules designed to simplify college operations for every role.
+      </p>
+    </div>
+
+    <!-- ONLY CHANGE: grid to 5 columns -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+
+      <!-- Permission Module -->
+      <div class="module-card bg-white rounded-2xl shadow p-6 border border-gray-100">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center text-3xl mb-4">📄</div>
+        <h3 class="text-lg font-bold text-gray-800">Permission Module</h3>
+        <p class="text-gray-500 text-sm mt-2 leading-relaxed">
+          Submit and track permission requests. Auto-escalation for urgent cases with full audit trail.
+        </p>
+      </div>
+
+      <!-- Certificate Module -->
+      <div class="module-card bg-white rounded-2xl shadow p-6 border border-gray-100">
+        <div class="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-3xl mb-4">🎓</div>
+        <h3 class="text-lg font-bold text-gray-800">Certificate Module</h3>
+        <p class="text-gray-500 text-sm mt-2 leading-relaxed">
+          Apply for certificates, track approvals, download PDF and verify authenticity via QR code.
+        </p>
+      </div>
+
+      <!-- Meeting Module -->
+      <div class="module-card bg-white rounded-2xl shadow p-6 border border-gray-100">
+        <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-3xl mb-4">🎥</div>
+        <h3 class="text-lg font-bold text-gray-800">Meeting Module</h3>
+        <p class="text-gray-500 text-sm mt-2 leading-relaxed">
+          Video meetings with Jitsi, collaborative whiteboard, attendance tracking and AI-generated summaries.
+        </p>
+      </div>
+
+      <!-- Marks Module -->
+      <div class="module-card bg-white rounded-2xl shadow p-6 border border-gray-100">
+        <div class="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-3xl mb-4">📊</div>
+        <h3 class="text-lg font-bold text-gray-800">Marks Module</h3>
+        <p class="text-gray-500 text-sm mt-2 leading-relaxed">
+          Track internal marks, analytics dashboard, toppers, at-risk alerts and department-wise comparison.
+        </p>
+      </div>
+
+      <!-- NEW: Certificate Hub -->
+      <div class="module-card bg-white rounded-2xl shadow p-6 border border-gray-100">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-3xl mb-4">🏆</div>
+        <h3 class="text-lg font-bold text-gray-800">Certificate Hub</h3>
+        <p class="text-gray-500 text-sm mt-2 leading-relaxed">
+          Central dashboard to manage all certificate requests, approvals and downloads.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-gray-300">
+  <div class="max-w-6xl mx-auto px-6 py-10 text-center">
+    <p class="text-sm text-gray-500">© {% now "Y" %} QuickPermit. All rights reserved.</p>
+  </div>
+</footer>
+
+{% endblock %}

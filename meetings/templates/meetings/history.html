@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto mt-8 space-y-6">
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Meeting History</h2>
+        <p class="text-gray-500 mt-1">View past, ongoing, scheduled, cancelled, and missed meetings.</p>
+      </div>
+
+      <div class="flex gap-3">
+        <a href="{% url 'create_meeting' %}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition">
+          🎥 Create Meeting
+        </a>
+        <a href="{% url 'hod_meetings_dashboard' %}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-white font-semibold hover:bg-gray-900 transition">
+          📊 Analytics
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <input type="text" name="q" value="{{ q }}"
+             placeholder="Search by title or creator"
+             class="border rounded-lg px-4 py-2">
+
+      <select name="status" class="border rounded-lg px-4 py-2">
+        <option value="">All Status</option>
+        <option value="scheduled" {% if status == "scheduled" %}selected{% endif %}>Scheduled</option>
+        <option value="ongoing" {% if status == "ongoing" %}selected{% endif %}>Ongoing</option>
+        <option value="completed" {% if status == "completed" %}selected{% endif %}>Ended</option>
+        <option value="cancelled" {% if status == "cancelled" %}selected{% endif %}>Cancelled</option>
+      </select>
+
+      <select name="type" class="border rounded-lg px-4 py-2">
+        <option value="">All Types</option>
+        <option value="academic" {% if meeting_type == "academic" %}selected{% endif %}>Academic</option>
+        <option value="placement" {% if meeting_type == "placement" %}selected{% endif %}>Placement</option>
+        <option value="general" {% if meeting_type == "general" %}selected{% endif %}>General</option>
+        <option value="department" {% if meeting_type == "department" %}selected{% endif %}>Department</option>
+        <option value="other" {% if meeting_type == "other" %}selected{% endif %}>Other</option>
+      </select>
+
+      <input type="text" name="department" value="{{ dept }}"
+             placeholder="Department"
+             class="border rounded-lg px-4 py-2">
+
+      <div class="md:col-span-4 flex gap-3">
+        <button type="submit"
+                class="px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800">
+          Filter
+        </button>
+        <a href="{% url 'meeting_history' %}"
+           class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">
+          Reset
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-6">
+    {% if meetings %}
+      <div class="overflow-x-auto">
+        <table class="w-full border border-gray-200 text-sm">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="p-3 text-left">ID</th>
+              <th class="p-3 text-left">Title</th>
+              <th class="p-3 text-left">Type</th>
+              <th class="p-3 text-left">Department</th>
+              <th class="p-3 text-left">Scheduled</th>
+              <th class="p-3 text-left">Created By</th>
+              <th class="p-3 text-left">Status</th>
+              <th class="p-3 text-left">Cancel Reason</th>
+              <th class="p-3 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in meetings %}
+              <tr class="border-t hover:bg-gray-50">
+                <td class="p-3">{{ m.id }}</td>
+                <td class="p-3">{{ m.title }}</td>
+                <td class="p-3">{{ m.meeting_type|title }}</td>
+                <td class="p-3">{{ m.department|default:"—" }}</td>
+                <td class="p-3">
+                  {% if m.scheduled_at %}
+                    {{ m.scheduled_at|date:"Y-m-d H:i" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="p-3">
+                  {% if m.created_by.first_name %}
+                    {{ m.created_by.first_name }} {{ m.created_by.last_name }}
+                  {% else %}
+                    {{ m.created_by.username }}
+                  {% endif %}
+                </td>
+                <td class="p-3">
+                  {% if m.status == "completed" %}
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Ended</span>
+                  {% elif m.status == "ongoing" %}
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Ongoing</span>
+                  {% elif m.status == "cancelled" %}
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelled</span>
+                  {% elif m.scheduled_at and m.status == "scheduled" and now.date > m.scheduled_at.date %}
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">Missed</span>
+                  {% else %}
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Scheduled</span>
+                  {% endif %}
+                </td>
+                <td class="p-3">{{ m.cancel_comment|default:"—" }}</td>
+                <td class="p-3 text-center">
+                  <a href="{% url 'meeting_detail' m.id %}"
+                     class="inline-flex items-center gap-2 px-3 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700">
+                    View
+                  </a>
+
+                  {% if m.status == "completed" %}
+                    <a href="{% url 'meeting_summary' m.id %}"
+                       class="inline-flex items-center gap-2 px-3 py-1 text-xs rounded bg-teal-600 text-white hover:bg-teal-700">
+                      Report
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">No meetings found.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

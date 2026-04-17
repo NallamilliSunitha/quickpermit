@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- Header -->
+  <div class="bg-gradient-to-br from-indigo-700 to-purple-700 rounded-2xl p-6 text-white relative overflow-hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
+    <div style="position:absolute;bottom:-60px;left:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.04);"></div>
+    <div class="relative z-10">
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold">📝 My Marks</h2>
+          <p class="text-indigo-200 text-sm mt-1">
+            {{ dept }} Department
+            {% if semester_filter %} · Semester {{ semester_filter }}{% endif %}
+          </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <a href="/marks/analytics/"
+             class="px-4 py-2 bg-white/20 border border-white/30 text-white rounded-xl font-semibold text-sm hover:bg-white/30 transition">
+            ← Analytics
+          </a>
+          <form method="GET" action="/marks/my/" class="flex gap-2 items-center">
+            <select name="semester"
+                    class="border-0 rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 bg-white focus:outline-none focus:ring-2 focus:ring-white">
+              <option value="">All Semesters</option>
+              {% for val, label in semester_choices %}
+                <option value="{{ val }}" {% if semester_filter == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit"
+                    class="px-4 py-2 bg-white text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-50 transition">
+              Apply
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Overall Stats -->
+      {% if overall_max > 0 %}
+      <div class="mt-5 grid grid-cols-3 gap-3">
+        <div class="bg-white/15 rounded-xl p-3 text-center">
+          <div class="text-2xl font-extrabold">{{ overall_total }}</div>
+          <div class="text-xs text-indigo-200 mt-0.5">Total Score</div>
+        </div>
+        <div class="bg-white/15 rounded-xl p-3 text-center">
+          <div class="text-2xl font-extrabold">{{ overall_pct }}%</div>
+          <div class="text-xs text-indigo-200 mt-0.5">Overall %</div>
+        </div>
+        <div class="bg-white/15 rounded-xl p-3 text-center">
+          <div class="text-2xl font-extrabold">{{ marks_data|length }}</div>
+          <div class="text-xs text-indigo-200 mt-0.5">Subjects</div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Position Card -->
+  {% if position and semester_filter %}
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h3 class="text-base font-bold text-gray-800 mb-4">
+      🏆 Your Position — Semester {{ semester_filter }} · {{ dept }}
+    </h3>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+      <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center">
+        <div style="font-size:2rem;font-weight:800;color:#4f46e5;line-height:1;">
+          {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% else %}#{{ position }}{% endif %}
+        </div>
+        <div class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wide">Your Rank</div>
+      </div>
+      <div class="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
+        <div style="font-size:2rem;font-weight:800;color:#16a34a;line-height:1;">{{ my_score }}</div>
+        <div class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wide">Your Score</div>
+      </div>
+      <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
+        <div style="font-size:2rem;font-weight:800;color:#d97706;line-height:1;">{{ total_students }}</div>
+        <div class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wide">Total Students</div>
+      </div>
+    </div>
+
+    {% if top3 %}
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:10px;">
+      Top Performers
+    </div>
+    <div class="space-y-2">
+      {% for t in top3 %}
+      <div class="flex items-center gap-3 p-3 rounded-xl {% if t.student.id == request.user.id %}bg-indigo-50 border border-indigo-200{% else %}bg-gray-50{% endif %}">
+        <div class="text-xl w-8 text-center">
+          {% if t.rank == 1 %}🥇{% elif t.rank == 2 %}🥈{% else %}🥉{% endif %}
+        </div>
+        <div class="flex-1">
+          <div class="font-semibold text-gray-800 text-sm">
+            {{ t.student.get_full_name|default:t.student.username }}
+            {% if t.student.id == request.user.id %}
+            <span class="ml-2 text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold">You</span>
+            {% endif %}
+          </div>
+        </div>
+        <div style="font-size:16px;font-weight:800;color:#6366f1;">{{ t.score }}</div>
+      </div>
+      {% endfor %}
+
+      {% if position > 3 %}
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-indigo-50 border border-indigo-200 border-dashed">
+        <div class="text-sm font-bold text-indigo-600 w-8 text-center">#{{ position }}</div>
+        <div class="flex-1">
+          <div class="font-semibold text-gray-800 text-sm">
+            {{ request.user.get_full_name|default:request.user.username }}
+            <span class="ml-2 text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold">You</span>
+          </div>
+        </div>
+        <div style="font-size:16px;font-weight:800;color:#6366f1;">{{ my_score }}</div>
+      </div>
+      {% endif %}
+
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
+  <!-- At Risk Warnings -->
+  {% for item in marks_data %}
+    {% if item.at_risk %}
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+      <span class="text-2xl">⚠️</span>
+      <div>
+        <div class="font-bold text-red-700">You are at risk in {{ item.subject.name }}</div>
+        <div class="text-sm text-red-600 mt-0.5">
+          Your performance is below the minimum required marks. Please improve before semester exams.
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+
+  <!-- Subject Marks -->
+  {% for item in marks_data %}
+  <div class="bg-white rounded-2xl shadow p-6 border-l-4
+    {% if item.at_risk %}border-red-400
+    {% elif item.percentage >= 70 %}border-green-400
+    {% elif item.percentage >= 50 %}border-amber-400
+    {% else %}border-gray-200{% endif %}">
+
+    <!-- Subject Header -->
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-800">{{ item.subject.name }}</h3>
+        <p class="text-sm text-gray-500 mt-0.5">
+          Sem {{ item.subject.semester }}
+          {% if item.subject.is_lab %}
+          <span class="ml-2 text-indigo-600 font-semibold">Lab</span>
+          {% endif %}
+        </p>
+      </div>
+      {% if item.subject_max > 0 %}
+      <div class="text-right">
+        <div style="font-size:22px;font-weight:800;
+          color:{% if item.percentage >= 70 %}#16a34a{% elif item.percentage >= 50 %}#d97706{% else %}#e11d48{% endif %};">
+          {{ item.subject_total }}/{{ item.subject_max }}
+        </div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ item.percentage }}%</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Progress Bar -->
+    {% if item.subject_max > 0 %}
+    <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+      <div class="h-full rounded-full transition-all"
+           style="width:{{ item.percentage }}%;
+                  background:{% if item.percentage >= 70 %}#10b981{% elif item.percentage >= 50 %}#f59e0b{% else %}#f43f5e{% endif %};">
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Exam Breakdown -->
+    <div class="space-y-3">
+
+      <!-- Mid 1 -->
+      {% if item.mid1 %}
+      <div class="border rounded-xl p-4 bg-gray-50">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-bold text-gray-700 text-sm">Mid 1</span>
+          {% if item.mid1.passed %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Pass</span>
+          {% else %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Fail</span>
+          {% endif %}
+        </div>
+        <div class="grid grid-cols-4 gap-2 text-center">
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-blue-600">{{ item.mid1.objective|default:"—" }}</p>
+            <p class="text-xs text-gray-500">Obj (10)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-purple-600">{{ item.mid1.descriptive|default:"—" }}</p>
+            <p class="text-xs text-gray-500">Desc (15)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-orange-600">{{ item.mid1.assignment|default:"—" }}</p>
+            <p class="text-xs text-gray-500">Assign (5)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-indigo-600">{{ item.mid1.theory_total }}</p>
+            <p class="text-xs text-gray-500">Total (30)</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Mid 2 -->
+      {% if item.mid2 %}
+      <div class="border rounded-xl p-4 bg-gray-50">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-bold text-gray-700 text-sm">Mid 2</span>
+          {% if item.mid2.passed %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Pass</span>
+          {% else %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Fail</span>
+          {% endif %}
+        </div>
+        <div class="grid grid-cols-4 gap-2 text-center">
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-blue-600">{{ item.mid2.objective|default:"—" }}</p>
+            <p class="text-xs text-gray-500">Obj (10)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-purple-600">{{ item.mid2.descriptive|default:"—" }}</p>
+            <p class="text-xs text-gray-500">Desc (15)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-orange-600">{{ item.mid2.assignment|default:"—" }}</p>
+            <p class="text-xs text-gray-500">Assign (5)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-indigo-600">{{ item.mid2.theory_total }}</p>
+            <p class="text-xs text-gray-500">Total (30)</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Lab -->
+      {% if item.lab %}
+      <div class="border rounded-xl p-4 bg-gray-50">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-bold text-gray-700 text-sm">Lab</span>
+          {% if item.lab.passed %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Pass</span>
+          {% else %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Fail</span>
+          {% endif %}
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-blue-600">{{ item.lab.lab_internal|default:"—" }}</p>
+            <p class="text-xs text-gray-500">Internal (30)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-purple-600">{{ item.lab.lab_external|default:"—" }}</p>
+            <p class="text-xs text-gray-500">External (70)</p>
+          </div>
+          <div class="bg-white rounded-lg p-2 border">
+            <p class="text-lg font-bold text-indigo-600">{{ item.lab_total }}</p>
+            <p class="text-xs text-gray-500">Total (100)</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- No marks yet -->
+      {% if not item.mid1 and not item.mid2 and not item.lab %}
+      <div class="text-center py-4 text-gray-400 text-sm">
+        No marks entered yet for this subject.
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  {% empty %}
+  <div class="bg-white rounded-2xl shadow p-12 text-center text-gray-400">
+    <p class="text-4xl mb-3">📝</p>
+    <p class="font-bold text-gray-600">No marks found.</p>
+    <p class="text-sm mt-1">
+      {% if semester_filter %}No subjects found for Semester {{ semester_filter }}.
+      {% else %}No marks entered yet.{% endif %}
+    </p>
+    <a href="/marks/analytics/"
+       class="inline-block mt-4 px-6 py-2 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition">
+      ← Back to Analytics
+    </a>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

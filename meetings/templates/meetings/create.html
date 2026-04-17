@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-3xl mx-auto mt-8 bg-white rounded-xl shadow p-6">
+
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Create Meeting</h2>
+    <p class="text-gray-500 mt-1">Schedule meetings for departments, staff or students.</p>
+  </div>
+
+  {% if error %}
+  <div class="mb-4 p-3 rounded bg-red-50 text-red-700 border border-red-200">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <form method="POST" id="create-meeting-form" class="space-y-5">
+    {% csrf_token %}
+
+    <!-- Meeting Title -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Meeting Title</label>
+      <input type="text" name="title" required
+             class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500"
+             placeholder="Placement Guidance Meeting">
+    </div>
+
+    <!-- Meeting Type + Audience -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Meeting Type</label>
+        <select name="meeting_type"
+                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500">
+          <option value="general">General</option>
+          <option value="academic">Academic</option>
+          <option value="placement">Placement</option>
+          <option value="department">Department</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Audience</label>
+        <select id="audience" name="audience_type"
+                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500">
+          {% if role == "staff" or role == "proctor" %}
+            <option value="students">Students</option>
+
+          {% elif role == "hod" %}
+            <option value="students">Students</option>
+            <option value="staff">Staff</option>
+            <option value="both">Both Students & Staff</option>
+
+          {% elif role == "dean" %}
+            <option value="students">Students</option>
+            <option value="staff">Staff</option>
+            <option value="hod">HODs</option>
+            <option value="hod_staff">Both HOD & Staff</option>
+            <option value="hod_students">Both HODs & Students</option>
+            <option value="students_staff">Both Students & Staff</option>
+            <option value="all">All</option>
+
+          {% elif role == "principal" %}
+            <option value="students">Students</option>
+            <option value="staff">Staff</option>
+            <option value="hod">HODs</option>
+            <option value="dean">Deans</option>
+            <option value="students_staff">Both Students & Staff</option>
+            <option value="hod_staff">Both HODs & Staff</option>
+            <option value="dean_staff">Both Deans & Staff</option>
+            <option value="dean_hod">Both Deans & HODs</option>
+            <option value="all">All</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Semester + Section + College (shown only when audience includes students) -->
+    <div id="student-filters" class="hidden">
+      <div class="border border-indigo-100 bg-indigo-50 rounded-xl p-4 space-y-4">
+
+        <p class="text-xs font-semibold text-indigo-500 uppercase tracking-widest">
+          🎓 Student Filters — Optional
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+          <!-- College -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">
+              College
+              <span class="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <select name="college" id="college"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-400 bg-white">
+              <option value="">All Colleges</option>
+              <option value="Aditya University">Aditya University</option>
+              <option value="Aditya College of Engineering & Technology">Aditya College of Engineering & Technology</option>
+              <option value="Aditya College of Engineering">Aditya College of Engineering</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-1">Leave as "All Colleges" to include all students.</p>
+          </div>
+
+          <!-- Semester -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">
+              Semester
+              <span class="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <select name="semester" id="semester"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-400 bg-white">
+              <option value="">All Semesters</option>
+              <option value="1">Sem 1</option>
+              <option value="2">Sem 2</option>
+              <option value="3">Sem 3</option>
+              <option value="4">Sem 4</option>
+              <option value="5">Sem 5</option>
+              <option value="6">Sem 6</option>
+              <option value="7">Sem 7</option>
+              <option value="8">Sem 8</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-1">Leave as "All Semesters" to include everyone.</p>
+          </div>
+
+          <!-- Section -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">
+              Section
+              <span class="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <select name="section" id="section"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-400 bg-white">
+              <option value="">All Sections</option>
+              <option value="A">Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+              <option value="D">Section D</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-1">Leave as "All Sections" to include every section.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Department Selection -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Department</label>
+
+      {% if role == "staff" or role == "proctor" or role == "hod" %}
+        <input type="text" name="department"
+               value="{{ request.user.userprofile.department }}"
+               readonly
+               class="w-full border rounded-lg px-4 py-2 bg-gray-100">
+      {% else %}
+        <div id="engineeringDepartments" class="grid grid-cols-2 gap-2 border rounded-lg p-3">
+          <label><input type="checkbox" name="departments" value="CSE"> CSE</label>
+          <label><input type="checkbox" name="departments" value="ECE"> ECE</label>
+          <label><input type="checkbox" name="departments" value="EEE"> EEE</label>
+          <label><input type="checkbox" name="departments" value="MECH"> MECH</label>
+          <label><input type="checkbox" name="departments" value="CIVIL"> CIVIL</label>
+        </div>
+        <div id="deanDepartments" class="grid grid-cols-2 gap-2 border rounded-lg p-3 hidden">
+          <label><input type="checkbox" name="departments" value="Academic Affairs"> Academic Affairs</label>
+          <label><input type="checkbox" name="departments" value="Student Affairs"> Student Affairs</label>
+          <label><input type="checkbox" name="departments" value="R&D"> R&D</label>
+          <label><input type="checkbox" name="departments" value="Placement"> Placement</label>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Select one or more departments</p>
+      {% endif %}
+    </div>
+
+    <!-- Scheduled Date & Time -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Scheduled Date & Time</label>
+      <input type="datetime-local" name="scheduled_at" id="scheduled_at" required
+             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"/>
+      <p class="text-xs text-gray-400 mt-1">Only future times can be selected.</p>
+    </div>
+
+    <!-- Duration -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Duration</label>
+      <select name="duration_minutes"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <option value="15">15 minutes</option>
+        <option value="30" selected>30 minutes</option>
+        <option value="45">45 minutes</option>
+        <option value="60">1 hour</option>
+        <option value="90">1.5 hours</option>
+        <option value="120">2 hours</option>
+        <option value="180">3 hours</option>
+      </select>
+    </div>
+
+    <!-- Specific Users -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">
+        Specific Roll Numbers / Usernames (Optional)
+      </label>
+      <textarea name="target_ids" rows="4"
+                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500"
+                placeholder="22A91A0501, 22A91A0502&#10;staff_username1, staff_username2"></textarea>
+      <p class="text-xs text-gray-500 mt-1">Leave empty if meeting is for all selected users.</p>
+    </div>
+
+    <!-- Submit -->
+    <div class="pt-2">
+      <button type="submit"
+              class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">
+        Create Meeting
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+const STUDENT_AUDIENCES = ['students', 'both', 'hod_students', 'students_staff', 'all'];
+const audienceSelect   = document.getElementById('audience');
+const studentFilters   = document.getElementById('student-filters');
+
+function toggleStudentFilters() {
+  const val = audienceSelect.value;
+  if (STUDENT_AUDIENCES.includes(val)) {
+    studentFilters.classList.remove('hidden');
+  } else {
+    studentFilters.classList.add('hidden');
+    document.getElementById('semester').value = '';
+    document.getElementById('section').value  = '';
+    document.getElementById('college').value  = '';
+  }
+}
+
+audienceSelect.addEventListener('change', toggleStudentFilters);
+toggleStudentFilters();
+
+function setMinDateTime() {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  const pad = n => String(n).padStart(2, '0');
+  const min = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('scheduled_at').min = min;
+}
+setMinDateTime();
+setInterval(setMinDateTime, 30000);
+
+function showDTError(msg) {
+  const input = document.getElementById('scheduled_at');
+  input.style.border = '2px solid red';
+  let err = document.getElementById('dt-error');
+  if (!err) {
+    err = document.createElement('p');
+    err.id = 'dt-error';
+    err.style.cssText = 'color:red;font-size:13px;margin-top:5px;font-weight:600;';
+    input.parentNode.appendChild(err);
+  }
+  err.textContent = msg;
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  input.focus();
+}
+
+function clearDTError() {
+  const input = document.getElementById('scheduled_at');
+  input.style.border = '';
+  const err = document.getElementById('dt-error');
+  if (err) err.remove();
+}
+
+document.getElementById('scheduled_at').addEventListener('change', function() {
+  if (!this.value) return;
+  if (new Date(this.value) <= new Date()) {
+    showDTError('❌ This time has already passed. Please choose a future time.');
+  } else {
+    clearDTError();
+  }
+});
+
+document.getElementById('create-meeting-form').addEventListener('submit', function(e) {
+  const input = document.getElementById('scheduled_at');
+  if (!input.value) {
+    e.preventDefault();
+    showDTError('❌ Please select a scheduled date and time.');
+    return;
+  }
+  if (new Date(input.value) <= new Date()) {
+    e.preventDefault();
+    showDTError('❌ Please select a future date and time.');
+    return;
+  }
+  clearDTError();
+});
+
+const eng  = document.getElementById("engineeringDepartments");
+const dean = document.getElementById("deanDepartments");
+
+if (audienceSelect && eng && dean) {
+  audienceSelect.addEventListener("change", function() {
+    if (this.value === "dean") {
+      eng.classList.add("hidden");
+      dean.classList.remove("hidden");
+    } else {
+      eng.classList.remove("hidden");
+      dean.classList.add("hidden");
+    }
+  });
+}
+</script>
+
+{% endblock %}

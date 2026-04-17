@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-6">
+  <div class="bg-white shadow rounded-xl p-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">Notifications</h2>
+      <a href="{% url 'notification_mark_all_read' %}"
+         class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
+        Mark all read
+      </a>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex flex-wrap gap-2 mb-6 border-b pb-3">
+      <button onclick="filterTab('all')" id="tab-all"
+              class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white">
+        All
+        <span class="ml-1 px-2 py-0.5 rounded-full text-xs bg-white text-indigo-600 font-bold" id="count-all">0</span>
+      </button>
+      <button onclick="filterTab('permission')" id="tab-permission"
+              class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+        Permissions
+        <span class="ml-1 px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700 font-bold" id="count-permission">0</span>
+      </button>
+      <button onclick="filterTab('meeting')" id="tab-meeting"
+              class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+        Meetings
+        <span class="ml-1 px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700 font-bold" id="count-meeting">0</span>
+      </button>
+      <button onclick="filterTab('certificate')" id="tab-certificate"
+              class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+        Certificates
+        <span class="ml-1 px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700 font-bold" id="count-certificate">0</span>
+      </button>
+      <!-- NEW Alerts Tab -->
+      <button onclick="filterTab('alert')" id="tab-alert"
+              class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+        ⚠️ Alerts
+        <span class="ml-1 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-600 font-bold" id="count-alert">0</span>
+      </button>
+    </div>
+
+    <!-- Notifications List -->
+    {% if items %}
+      <div class="space-y-3" id="notifications-list">
+        {% for n in items %}
+        <div class="notification-item p-4 rounded-xl border transition
+                    {% if not n.is_read %}
+                      {% if 'At Risk' in n.title %}bg-red-50 border-red-100
+                      {% else %}bg-indigo-50 border-indigo-100{% endif %}
+                    {% else %}bg-white border-gray-200{% endif %}"
+             data-module="{% if 'At Risk' in n.title %}alert{% elif 'Certificate' in n.title %}certificate{% elif 'Meeting' in n.title or 'Invited' in n.title or 'Ended' in n.title or 'Cancelled' in n.title %}meeting{% elif 'Permission' in n.title or 'Request' in n.title or 'Escalat' in n.title or 'Submitted' in n.title or 'Forwarded' in n.title or 'Reassign' in n.title %}permission{% else %}other{% endif %}">
+
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+
+              <!-- Module Icon -->
+              <div class="mt-1 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                {% if 'At Risk' in n.title %}bg-red-100
+                {% elif 'Certificate' in n.title %}bg-green-100
+                {% elif 'Meeting' in n.title or 'Invited' in n.title or 'Ended' in n.title %}bg-blue-100
+                {% elif 'Permission' in n.title or 'Request' in n.title or 'Escalat' in n.title %}bg-purple-100
+                {% else %}bg-gray-100{% endif %}">
+                <span class="text-sm">
+                  {% if 'At Risk' in n.title %}⚠️
+                  {% elif 'Certificate' in n.title %}🎓
+                  {% elif 'Meeting' in n.title or 'Invited' in n.title or 'Ended' in n.title %}🎥
+                  {% elif 'Permission' in n.title or 'Request' in n.title or 'Escalat' in n.title %}📄
+                  {% else %}🔔{% endif %}
+                </span>
+              </div>
+
+              <div>
+                <!-- Title + unread dot -->
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-sm
+                    {% if 'At Risk' in n.title %}text-red-700
+                    {% else %}text-gray-800{% endif %}">
+                    {{ n.title }}
+                  </span>
+                  {% if not n.is_read %}
+                    <span class="w-2 h-2 rounded-full
+                      {% if 'At Risk' in n.title %}bg-red-500{% else %}bg-indigo-500{% endif %}
+                      inline-block"></span>
+                  {% endif %}
+                </div>
+
+                <!-- Message -->
+                <p class="text-gray-600 text-sm mt-0.5">{{ n.message }}</p>
+
+                <!-- Actions -->
+                <div class="mt-2 flex flex-wrap gap-2">
+                  {% if n.link %}
+                    <a href="{{ n.link }}"
+                       class="text-xs px-3 py-1 rounded-lg font-semibold hover:opacity-90
+                         {% if 'At Risk' in n.title %}bg-red-600 text-white hover:bg-red-700
+                         {% else %}bg-indigo-600 text-white hover:bg-indigo-700{% endif %}">
+                      Open
+                    </a>
+                  {% endif %}
+                  {% if not n.is_read %}
+                    <a href="{% url 'notification_mark_read' n.id %}"
+                       class="text-xs px-3 py-1 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300">
+                      Mark read
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Time -->
+            <div class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
+              {{ n.created_at|date:"d M, H:i" }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Empty state per tab -->
+      <div id="empty-tab" class="hidden text-center py-10 text-gray-400">
+        <p class="text-4xl mb-2">🔔</p>
+        <p class="font-semibold">No notifications in this category</p>
+      </div>
+
+    {% else %}
+      <div class="text-center py-10 text-gray-400">
+        <p class="text-4xl mb-2">🔔</p>
+        <p class="font-semibold">No notifications yet</p>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+  function filterTab(type) {
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.classList.remove("bg-indigo-600", "text-white", "bg-red-600");
+      btn.classList.add("bg-gray-100", "text-gray-700");
+    });
+    const activeTab = document.getElementById("tab-" + type);
+    if (activeTab) {
+      activeTab.classList.remove("bg-gray-100", "text-gray-700");
+      if (type === "alert") {
+        activeTab.classList.add("bg-red-600", "text-white");
+      } else {
+        activeTab.classList.add("bg-indigo-600", "text-white");
+      }
+    }
+
+    const items = document.querySelectorAll(".notification-item");
+    let visible = 0;
+    items.forEach(item => {
+      const module = item.dataset.module;
+      if (type === "all" || module === type) {
+        item.style.display = "block";
+        visible++;
+      } else {
+        item.style.display = "none";
+      }
+    });
+
+    const emptyEl = document.getElementById("empty-tab");
+    if (emptyEl) {
+      emptyEl.classList.toggle("hidden", visible > 0);
+    }
+  }
+
+  function updateCounts() {
+    const items = document.querySelectorAll(".notification-item");
+    const counts = { all: 0, permission: 0, meeting: 0, certificate: 0, alert: 0 };
+
+    items.forEach(item => {
+      counts.all++;
+      const module = item.dataset.module;
+      if (counts[module] !== undefined) counts[module]++;
+    });
+
+    Object.keys(counts).forEach(key => {
+      const el = document.getElementById("count-" + key);
+      if (el) el.textContent = counts[key];
+    });
+
+    // Show red badge on alerts tab if there are alerts
+    const alertCount = counts.alert;
+    const alertTab = document.getElementById("tab-alert");
+    if (alertTab && alertCount > 0) {
+      alertTab.classList.add("border-2", "border-red-400");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    updateCounts();
+    filterTab("all");
+  });
+</script>
+
+{% endblock %}

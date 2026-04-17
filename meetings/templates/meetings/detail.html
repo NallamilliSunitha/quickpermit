@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto mt-6 space-y-6">
+
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h2 class="text-2xl font-bold">{{ meeting.title }}</h2>
+    <p class="text-gray-600">
+      Room: <b>{{ meeting.room_name }}</b> | Dept: <b>{{ meeting.department }}</b>
+    </p>
+    <p class="text-gray-500 mt-1">
+      Status: {{ meeting.status|title }}
+    </p>
+
+    <div class="mt-4 flex gap-3">
+      {% if is_creator %}
+        <a href="https://meet.jit.si/{{ meeting.room_name }}" target="_blank"
+           class="px-5 py-2 rounded bg-indigo-600 text-white font-semibold">
+          Open Meeting Room
+        </a>
+
+        <a href="{% url 'end_meeting' meeting.id %}"
+           class="px-5 py-2 rounded bg-red-600 text-white font-semibold">
+          End Meeting
+        </a>
+      {% else %}
+        <a href="https://meet.jit.si/{{ meeting.room_name }}" target="_blank"
+           class="px-5 py-2 rounded bg-green-600 text-white font-semibold">
+          Join Meeting
+        </a>
+      {% endif %}
+    </div>
+
+    <p class="mt-3 text-sm text-gray-500">
+      Keep this CampusIQ page open during the meeting for attendance checkpoints.
+    </p>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Random Attendance Checkpoints</h3>
+    <ul class="list-disc ml-6 text-gray-700">
+      {% for cp in checkpoints %}
+        <li>Checkpoint {{ cp.checkpoint_no }} — {{ cp.scheduled_at|date:"Y-m-d H:i:s" }}</li>
+      {% empty %}
+        <li>No checkpoints available.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+</div>
+
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+setInterval(() => {
+  fetch("{% url 'meeting_heartbeat' meeting.id %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken")
+    }
+  });
+}, 30000);
+</script>
+{% endblock %}

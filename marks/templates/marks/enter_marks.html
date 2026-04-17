@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load marks_tags %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Enter Marks</h2>
+        <p class="text-gray-500 text-sm mt-1">
+          {{ subject.name }} — Sem {{ subject.semester }} — {{ subject.department }}
+        </p>
+      </div>
+      <a href="{% url 'subject_list' %}"
+         class="px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold text-sm hover:bg-gray-900">
+        ← Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Exam Type Selector -->
+  <div class="bg-white rounded-xl shadow p-4 flex gap-3">
+    <a href="?exam=mid1{% if semester_filter %}&semester={{ semester_filter }}{% endif %}"
+       class="px-5 py-2 rounded-lg font-semibold text-sm {% if exam_type == 'mid1' %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+      Mid 1
+    </a>
+    <a href="?exam=mid2{% if semester_filter %}&semester={{ semester_filter }}{% endif %}"
+       class="px-5 py-2 rounded-lg font-semibold text-sm {% if exam_type == 'mid2' %}bg-purple-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+      Mid 2
+    </a>
+    <a href="?exam=lab{% if semester_filter %}&semester={{ semester_filter }}{% endif %}"
+       class="px-5 py-2 rounded-lg font-semibold text-sm {% if exam_type == 'lab' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+      Lab
+    </a>
+  </div>
+
+ 
+
+  <!-- Marks Form -->
+  <form method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="exam_type" value="{{ exam_type }}">
+
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
+        <h3 class="font-bold text-gray-800">
+          {% if exam_type == 'lab' %}Lab Marks (Internal: 30, External: 70)
+          {% else %}{{ exam_type|upper }} Marks (Obj: 10, Desc: 15, Assign: 5){% endif %}
+          {% if semester_filter %}
+            <span class="ml-2 text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
+              Semester {{ semester_filter }}
+            </span>
+          {% endif %}
+        </h3>
+        <button type="submit"
+                class="px-5 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700">
+          💾 Save All
+        </button>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100 text-gray-600">
+            <tr>
+              <th class="p-3 text-left">Student</th>
+              <th class="p-3 text-left">Roll No</th>
+              <th class="p-3 text-left">Semester</th>
+              {% if exam_type == 'lab' %}
+                <th class="p-3 text-center">Internal (max 30)</th>
+                <th class="p-3 text-center">External (max 70)</th>
+                <th class="p-3 text-center">Total</th>
+                <th class="p-3 text-center">Status</th>
+              {% else %}
+                <th class="p-3 text-center">Objective (max 10)</th>
+                <th class="p-3 text-center">Descriptive (max 15)</th>
+                <th class="p-3 text-center">Assignment (max 5)</th>
+                <th class="p-3 text-center">Total</th>
+                <th class="p-3 text-center">Status</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+            <tr class="border-t hover:bg-gray-50">
+              <td class="p-3 font-semibold text-gray-800">{{ student.get_full_name|default:student.username }}</td>
+              <td class="p-3 text-gray-500 text-xs">{{ student.username }}</td>
+              <td class="p-3 text-gray-500 text-xs">
+                {% if student.userprofile.semester %}
+                  Sem {{ student.userprofile.semester }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              {% if exam_type == 'lab' %}
+                <td class="p-3">
+                  <input type="number" name="lab_internal_{{ student.id }}"
+                         min="0" max="30" step="0.5"
+                         value="{% with m=existing_map|get_item:student.id %}{% if m %}{{ m.lab_internal|default:'' }}{% endif %}{% endwith %}"
+                         class="w-20 border rounded px-2 py-1 text-center text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                         placeholder="0-30" oninput="calcLabTotal({{ student.id }})">
+                </td>
+                <td class="p-3">
+                  <input type="number" name="lab_external_{{ student.id }}"
+                         min="0" max="70" step="0.5"
+                         value="{% with m=existing_map|get_item:student.id %}{% if m %}{{ m.lab_external|default:'' }}{% endif %}{% endwith %}"
+                         class="w-20 border rounded px-2 py-1 text-center text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                         placeholder="0-70" oninput="calcLabTotal({{ student.id }})">
+                </td>
+                <td class="p-3 text-center font-bold" id="lab_total_{{ student.id }}">—</td>
+                <td class="p-3 text-center" id="lab_status_{{ student.id }}">—</td>
+
+              {% else %}
+                <td class="p-3">
+                  <input type="number" name="objective_{{ student.id }}"
+                         min="0" max="10" step="0.5"
+                         value="{% with m=existing_map|get_item:student.id %}{% if m %}{{ m.objective|default:'' }}{% endif %}{% endwith %}"
+                         class="w-16 border rounded px-2 py-1 text-center text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                         placeholder="0-10" oninput="calcTotal({{ student.id }})">
+                </td>
+                <td class="p-3">
+                  <input type="number" name="descriptive_{{ student.id }}"
+                         min="0" max="15" step="0.5"
+                         value="{% with m=existing_map|get_item:student.id %}{% if m %}{{ m.descriptive|default:'' }}{% endif %}{% endwith %}"
+                         class="w-16 border rounded px-2 py-1 text-center text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                         placeholder="0-15" oninput="calcTotal({{ student.id }})">
+                </td>
+                <td class="p-3">
+                  <input type="number" name="assignment_{{ student.id }}"
+                         min="0" max="5" step="0.5"
+                         value="{% with m=existing_map|get_item:student.id %}{% if m %}{{ m.assignment|default:'' }}{% endif %}{% endwith %}"
+                         class="w-16 border rounded px-2 py-1 text-center text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                         placeholder="0-5" oninput="calcTotal({{ student.id }})">
+                </td>
+                <td class="p-3 text-center font-bold" id="total_{{ student.id }}">—</td>
+                <td class="p-3 text-center" id="status_{{ student.id }}">—</td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="p-6 text-center text-gray-400">
+                {% if semester_filter %}
+                  No students found in Semester {{ semester_filter }}.
+                {% else %}
+                  No students found in this department.
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile -->
+      <div class="md:hidden p-6 text-center text-gray-500 text-sm">
+        <p class="text-2xl mb-2">💻</p>
+        <p class="font-semibold text-gray-700">Use a laptop or desktop to enter marks.</p>
+        <p class="text-xs mt-1 text-gray-400">Mobile mark entry is not supported to avoid data conflicts.</p>
+      </div>
+
+      <div class="p-4 border-t flex justify-end">
+        <button type="submit"
+                class="px-8 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
+          💾 Save All Marks
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+
+function calcTotal(sid) {
+  const obj  = parseFloat(document.querySelector(`[name="objective_${sid}"]`)?.value) || 0;
+  const desc = parseFloat(document.querySelector(`[name="descriptive_${sid}"]`)?.value) || 0;
+  const asgn = parseFloat(document.querySelector(`[name="assignment_${sid}"]`)?.value) || 0;
+  const total = obj + desc + asgn;
+  document.querySelectorAll(`#total_${sid}`).forEach(el => el.textContent = total.toFixed(1));
+  const passed = total >= 12;
+  document.querySelectorAll(`#status_${sid}`).forEach(el => {
+    el.innerHTML = passed
+      ? '<span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 font-bold">Pass</span>'
+      : '<span class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-bold">Fail</span>';
+  });
+}
+
+function calcLabTotal(sid) {
+  const int_ = parseFloat(document.querySelector(`[name="lab_internal_${sid}"]`)?.value) || 0;
+  const ext  = parseFloat(document.querySelector(`[name="lab_external_${sid}"]`)?.value) || 0;
+  const total = int_ + ext;
+  document.querySelectorAll(`#lab_total_${sid}`).forEach(el => el.textContent = total.toFixed(1));
+  const passed = int_ >= 12 && ext >= 28;
+  document.querySelectorAll(`#lab_status_${sid}`).forEach(el => {
+    el.innerHTML = passed
+      ? '<span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 font-bold">Pass</span>'
+      : '<span class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-bold">Fail</span>';
+  });
+}
+</script>
+{% endblock %}

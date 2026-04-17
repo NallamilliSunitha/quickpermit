@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto mt-10 space-y-8">
+
+  <div class="bg-white rounded-2xl shadow p-8">
+    <h1 class="text-3xl font-bold text-gray-800">
+      Welcome,
+      <span class="text-indigo-600">
+        {% if request.user.first_name %}
+          {{ request.user.first_name }} {{ request.user.last_name }}
+        {% else %}
+          {{ request.user.username }}
+        {% endif %}
+      </span>
+    </h1>
+    <p class="text-gray-500 mt-2">Choose a module to continue</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+    <a href="{% url 'permission_module' %}" class="block bg-white rounded-2xl shadow p-6 hover:shadow-lg transition">
+      <div class="text-4xl mb-4">📄</div>
+      <h2 class="text-xl font-bold text-gray-800">Permission Module</h2>
+      <p class="text-gray-500 mt-2">Manage permission requests, approvals, forwarding, and tracking.</p>
+      <div class="mt-4 text-indigo-600 font-semibold">Open Module →</div>
+    </a>
+
+    <a href="{% url 'certificate_module' %}" class="block bg-white rounded-2xl shadow p-6 hover:shadow-lg transition">
+      <div class="text-4xl mb-4">🎓</div>
+      <h2 class="text-xl font-bold text-gray-800">Certificate Module</h2>
+      <p class="text-gray-500 mt-2">Apply for certificates, track approvals, and manage certificate records.</p>
+      <div class="mt-4 text-indigo-600 font-semibold">Open Module →</div>
+    </a>
+
+    <a href="{% url 'meeting_module' %}" class="block bg-white rounded-2xl shadow p-6 hover:shadow-lg transition">
+      <div class="text-4xl mb-4">🎥</div>
+      <h2 class="text-xl font-bold text-gray-800">Meeting Module</h2>
+      <p class="text-gray-500 mt-2">Create meetings, view meeting history, join sessions, and attendance reports.</p>
+      <div class="mt-4 text-indigo-600 font-semibold">Open Module →</div>
+    </a>
+    <a href="{% url 'certificate_hub' %}" class="block bg-white rounded-2xl shadow p-6 hover:shadow-lg transition">
+  <div class="text-4xl mb-4">📂</div>
+  <h2 class="text-xl font-bold text-gray-800">Certificate Hub</h2>
+  <p class="text-gray-500 mt-2">
+    View all your certificates in one place, including system-generated and uploaded documents.
+  </p>
+  <div class="mt-4 text-indigo-600 font-semibold">Open Module →</div>
+</a>
+
+    <!-- Marks Module — visible to all roles -->
+    <a href="{% url 'subject_list' %}" class="block bg-white rounded-2xl shadow p-6 hover:shadow-lg transition">
+      <div class="text-4xl mb-4">📊</div>
+      <h2 class="text-xl font-bold text-gray-800">Marks Module</h2>
+      <p class="text-gray-500 mt-2">
+        {% if profile and profile.role == "student" %}
+          View your subject-wise marks, performance and results.
+        {% elif profile and profile.role in "staff proctor" %}
+          Enter student marks, manage subjects and view analytics.
+        {% else %}
+          View department marks analytics, toppers and pass rates.
+        {% endif %}
+      </p>
+      <div class="mt-4 text-indigo-600 font-semibold">Open Module →</div>
+    </a>
+
+
+
+{% endblock %}

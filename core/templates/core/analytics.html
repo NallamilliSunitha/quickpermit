@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- Page Title -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-2xl font-bold text-gray-800">Department Analytics Dashboard</h2>
+    <p class="text-gray-500 mt-1">
+      Overview of department-level permission activity and user analytics.
+    </p>
+  </div>
+
+  <!-- ================= SEARCH SECTION ================= -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Search User Analytics</h3>
+
+    <form method="GET" action="{% url 'user_analytics' %}" 
+          class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <!-- Role Dropdown -->
+      <select name="type"
+              class="border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500"
+              required>
+        <option value="">-- Select Role --</option>
+        <option value="student">Student</option>
+        <option value="staff">Staff</option>
+        <option value="proctor">Proctor</option>
+        <option value="hod">HOD</option>
+        <option value="dean">Dean</option>
+        <option value="principal">Principal</option>
+      </select>
+
+      <!-- Search Input -->
+      <input type="text"
+             name="q"
+             placeholder="Enter username or name..."
+             class="border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500"
+             required />
+
+      <!-- Button -->
+      <button type="submit"
+              class="bg-indigo-600 text-white rounded-lg p-3 font-semibold hover:bg-indigo-700 transition">
+        🔍 Search
+      </button>
+    </form>
+  </div>
+
+  <!-- ================= DEPARTMENT SUMMARY ================= -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Department Summary</h3>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+
+      <div class="p-5 rounded-xl bg-gray-50 text-center shadow-sm">
+        <p class="text-gray-500">Total Requests</p>
+        <p class="text-3xl font-bold text-gray-800 mt-2">{{ summary.total }}</p>
+      </div>
+
+      <div class="p-5 rounded-xl bg-yellow-50 text-center shadow-sm">
+        <p class="text-gray-600">Pending</p>
+        <p class="text-3xl font-bold text-yellow-600 mt-2">{{ summary.pending }}</p>
+      </div>
+
+      <div class="p-5 rounded-xl bg-red-50 text-center shadow-sm">
+        <p class="text-gray-600">Urgent Pending</p>
+        <p class="text-3xl font-bold text-red-600 mt-2">{{ summary.urgent_pending }}</p>
+      </div>
+
+      <div class="p-5 rounded-xl bg-green-50 text-center shadow-sm">
+        <p class="text-gray-600">Approved</p>
+        <p class="text-3xl font-bold text-green-600 mt-2">{{ summary.approvals }}</p>
+      </div>
+
+      <div class="p-5 rounded-xl bg-rose-50 text-center shadow-sm">
+        <p class="text-gray-600">Rejected</p>
+        <p class="text-3xl font-bold text-rose-600 mt-2">{{ summary.rejections }}</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= TOP STUDENTS TABLE ================= -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h3 class="text-xl font-semibold mb-4">Top Students by Requests</h3>
+
+    {% if top_students %}
+    <div class="overflow-x-auto">
+      <table class="w-full border border-gray-200 text-sm">
+        <thead class="bg-gray-100 text-gray-700">
+          <tr>
+            <th class="p-3 text-left">Student</th>
+            <th class="p-3 text-left">Total</th>
+            <th class="p-3 text-left">Urgent</th>
+            <th class="p-3 text-left">Approved</th>
+            <th class="p-3 text-left">Rejected</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in top_students %}
+          <tr class="border-t hover:bg-gray-50">
+            <td class="p-3 font-medium">{{ s.student__username }}</td>
+            <td class="p-3">{{ s.total }}</td>
+            <td class="p-3 text-red-600 font-semibold">{{ s.urgent }}</td>
+            <td class="p-3 text-green-600 font-semibold">{{ s.approved }}</td>
+            <td class="p-3 text-rose-600 font-semibold">{{ s.rejected }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-gray-500">No student data available.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

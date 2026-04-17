@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-6xl mx-auto mt-10">
+
+  <h2 class="text-2xl font-bold mb-6">My Certificate Hub</h2>
+
+  <!-- Upload Button -->
+  <a href="{% url 'upload_certificate' %}" 
+     class="bg-indigo-600 text-white px-4 py-2 rounded-lg">
+     Upload Certificate
+  </a>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+
+    {% for cert in certs %}
+    <div class="bg-white shadow rounded-xl p-4">
+
+        <!-- Title -->
+        <h3 class="font-bold text-lg">{{ cert.title }}</h3>
+
+        <!-- Type -->
+        <p class="text-sm text-gray-500">
+          {% if cert.certificate_type == 'SYSTEM' %}
+            🎓 Approved Certificate
+          {% else %}
+            📤 Uploaded Certificate
+          {% endif %}
+        </p>
+
+        <!-- Certificate Code (only for system) -->
+        {% if cert.issued_certificate %}
+        <p class="text-xs text-gray-400">
+          Code: {{ cert.issued_certificate.cert_code }}
+        </p>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="mt-3 flex gap-3 flex-wrap">
+
+            <!-- View / Download -->
+            {% if cert.file %}
+                <a href="{{ cert.file.url }}" target="_blank" class="text-blue-600">View</a>
+                <a href="{{ cert.file.url }}" download class="text-green-600">Download</a>
+
+            {% elif cert.issued_certificate %}
+                <a href="{% url 'view_certificate' cert.issued_certificate.request.id %}" 
+                   class="text-blue-600">
+                   View
+                </a>
+            {% else %}
+                <span class="text-gray-400">No file available</span>
+            {% endif %}
+
+            <!-- Delete ONLY for uploaded -->
+            {% if cert.certificate_type == 'UPLOAD' %}
+                <a href="{% url 'delete_certificate' cert.id %}" 
+                   class="text-red-600">
+                   Delete
+                </a>
+            {% endif %}
+
+        </div>
+    </div>
+
+    {% empty %}
+        <p class="text-gray-500">No certificates available.</p>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+{% endblock %}

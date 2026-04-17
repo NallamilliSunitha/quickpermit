@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ meeting.title }} — CampusIQ</title>
+<script src="https://jitsi.riot.im/external_api.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html, body { height: 100%; margin: 0; }
+
+  .room-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: 48px 1fr 64px;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .topbar {
+    grid-column: 1 / -1;
+    background: #1e293b;
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 12px;
+  }
+  .topbar-logo { color: #6366f1; font-weight: 800; font-size: 14px; }
+  .topbar-title { color: #e2e8f0; font-size: 13px; font-weight: 500; flex: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-timer { color: #94a3b8; font-size: 12px; font-family: monospace; }
+  .live-badge {
+    font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; background: rgba(239,68,68,0.2);
+    color: #ef4444; animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .cp-row { display: flex; gap: 5px; align-items: center; }
+  .cp-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #475569; transition: background 0.4s;
+  }
+  .cp-dot.done { background: #22c55e; }
+  .cp-dot.pulsing { background: #6366f1; animation: cpulse 1s infinite; }
+  @keyframes cpulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.5)} }
+
+  #jitsi-wrap { overflow: hidden; }
+
+  .cap-bar {
+    background: #1e293b; border-top: 1px solid #334155;
+    display: flex; align-items: center; padding: 0 14px; gap: 10px;
+  }
+  #cap-text { color: #cbd5e1; font-size: 14px; flex: 1; font-style: italic; }
+  .cc-pill {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; background: rgba(34,197,94,0.15);
+    color: #22c55e; white-space: nowrap;
+  }
+
+  .right-panel {
+    grid-row: 2 / 4;
+    background: #fff; border-left: 1px solid #e2e8f0;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .ptabs { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+  .ptab {
+    flex: 1; padding: 10px 4px; border: none; background: none;
+    font-size: 11px; font-weight: 700; color: #94a3b8; cursor: pointer;
+    border-bottom: 2px solid transparent; text-transform: uppercase;
+    letter-spacing: 0.4px; transition: all 0.2s;
+  }
+  .ptab.on { color: #6366f1; border-bottom-color: #6366f1; background: #fff; }
+
+  .pbody { flex: 1; overflow: hidden; position: relative; }
+  .pane { position: absolute; inset: 0; overflow-y: auto; padding: 12px; display: none; }
+  .pane.on { display: block; }
+  #pane-wb { padding: 0; display: none; flex-direction: column; }
+  #pane-wb.on { display: flex; }
+
+  .p-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; }
+  .p-item:hover { background: #f8fafc; }
+  .av {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg,#6366f1,#8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .pname { font-size: 13px; font-weight: 500; color: #1e293b; }
+  .prole { font-size: 11px; color: #94a3b8; }
+  .pdot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; margin-left: auto; }
+  .pdot.away { background: #ef4444; }
+
+  .te { margin-bottom: 10px; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #6366f1; }
+  .ts { font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
+  .tt { font-size: 13px; color: #334155; line-height: 1.5; }
+  .tm { font-size: 10px; color: #94a3b8; margin-top: 3px; font-family: monospace; }
+
+  .wb-tools {
+    padding: 7px 10px; border-bottom: 1px solid #e2e8f0;
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap; background: #f8fafc;
+  }
+  .wbtn {
+    padding: 4px 9px; border-radius: 6px; border: 1px solid #e2e8f0;
+    background: #fff; color: #334155; font-size: 11px; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .wbtn:hover, .wbtn.on { background: #6366f1; border-color: #6366f1; color: #fff; }
+  .cbtn { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .cbtn.on { border-color: #6366f1; }
+  #wb { flex: 1; cursor: crosshair; background: #fff; display: block; }
+
+  .cbar {
+    padding: 10px 12px; border-top: 1px solid #e2e8f0;
+    display: flex; gap: 8px; background: #f8fafc; flex-shrink: 0;
+  }
+  .cbtnd {
+    flex: 1; padding: 9px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .red { background: #fee2e2; color: #ef4444; }
+  .red:hover { background: #ef4444; color: #fff; }
+  .blue { background: #e0e7ff; color: #6366f1; }
+  .blue:hover { background: #6366f1; color: #fff; }
+
+  .toast {
+    position: fixed; top: 58px; left: 50%;
+    transform: translateX(-50%) translateY(-12px);
+    background: #22c55e; color: #fff;
+    padding: 9px 22px; border-radius: 30px; font-size: 13px; font-weight: 700;
+    opacity: 0; transition: all 0.35s; z-index: 999; pointer-events: none;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .empty { text-align: center; color: #94a3b8; font-size: 13px; padding: 32px 16px; line-height: 1.8; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="room-grid">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <span class="topbar-logo">CampusIQ</span>
+    <span class="topbar-title">{{ meeting.title }} &nbsp;·&nbsp; {{ meeting.department }}</span>
+    <div class="cp-row" title="Attendance Checkpoints">
+      <span style="font-size:10px;color:#64748b;">CP</span>
+      <div class="cp-dot" id="cp1"></div>
+      <div class="cp-dot" id="cp2"></div>
+      <div class="cp-dot" id="cp3"></div>
+    </div>
+    <span class="topbar-timer" id="timer">00:00</span>
+    <span class="live-badge">● LIVE</span>
+  </div>
+
+  <!-- VIDEO -->
+  <div id="jitsi-wrap"></div>
+
+  <!-- CAPTIONS -->
+  <div class="cap-bar">
+    <span style="font-size:18px;">💬</span>
+    <span id="cap-text">Live captions will appear here as people speak...</span>
+    <span class="cc-pill" id="cc-status">CC ON</span>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="ptabs">
+      <button class="ptab on" onclick="switchTab('people',this)">👥 People</button>
+      <button class="ptab" onclick="switchTab('transcript',this)">📝 Transcript</button>
+      <button class="ptab" onclick="switchTab('wb',this)">✏️ Board</button>
+    </div>
+
+    <div class="pbody">
+      <div class="pane on" id="pane-people">
+        <div id="plist"><div class="empty">Loading participants...</div></div>
+      </div>
+
+      <div class="pane" id="pane-transcript">
+        <div id="tlist"><div class="empty">Start speaking — transcript appears here.</div></div>
+      </div>
+
+      <div class="pane" id="pane-wb">
+        <div class="wb-tools">
+          <button class="wbtn on" id="t-pen"    onclick="setTool('pen',this)">✏️ Pen</button>
+          <button class="wbtn"    id="t-eraser" onclick="setTool('eraser',this)">⬜ Erase</button>
+          <button class="wbtn"    id="t-text"   onclick="setTool('text',this)">T Text</button>
+          <div class="cbtn on" style="background:#1e293b" onclick="setColor('#1e293b',this)"></div>
+          <div class="cbtn" style="background:#6366f1"    onclick="setColor('#6366f1',this)"></div>
+          <div class="cbtn" style="background:#ef4444"    onclick="setColor('#ef4444',this)"></div>
+          <div class="cbtn" style="background:#22c55e"    onclick="setColor('#22c55e',this)"></div>
+          <div class="cbtn" style="background:#f59e0b"    onclick="setColor('#f59e0b',this)"></div>
+          <button class="wbtn" onclick="clearWB()">🗑️</button>
+          <button class="wbtn" onclick="savePage()" style="background:#22c55e;border-color:#22c55e;color:#fff;">💾 Save Page</button>
+          <span id="page-indicator" style="font-size:12px;color:#64748b;font-weight:600;padding:0 6px;">Page 1</span>
+          {% if is_creator %}
+          <button class="wbtn on" onclick="dlPDF()" style="background:#6366f1;border-color:#6366f1;color:#fff;">⬇PDF</button>
+          {% endif %}
+        </div>
+        <canvas id="wb"></canvas>
+      </div>
+    </div>
+
+    {% if is_creator %}
+    <div class="cbar">
+      <button class="cbtnd red"  onclick="doEnd()">🔴 End Meeting</button>
+      <button class="cbtnd blue" onclick="doSave()">💾 Save Transcript</button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ Attendance Checkpoint Recorded!</div>
+
+<script>
+  // Detect mobile browser
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
+// On mobile — open Jitsi app directly
+if (isMobile()) {
+  const jitsiUrl = `https://meet.jit.si/${ROOM}`;
+  const appUrl   = `org.jitsi.meet://${ROOM}`;
+  
+  // Try to open app, fallback to browser
+  window.location = appUrl;
+  setTimeout(() => {
+    window.location = jitsiUrl;
+  }, 2000);
+}
+const MID    = {{ meeting.id }};
+const ROOM   = "{{ meeting.room_name }}";
+const CREAT  = {% if is_creator %}true{% else %}false{% endif %};
+const UNAME  = "{% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.username }}{% endif %}";
+const CSRF   = "{{ csrf_token }}";
+
+// ── JITSI (moderator issue fixed) ────────────────────────
+const api = new JitsiMeetExternalAPI("jitsi.riot.im", {
+  roomName: ROOM,
+  parentNode: document.getElementById("jitsi-wrap"),
+  width: "100%",
+  height: "100%",
+  userInfo: { displayName: UNAME },
+  configOverwrite: {
+    prejoinPageEnabled: false,
+    startWithAudioMuted: false,
+    startWithVideoMuted: false,
+    enableLobbyChat: false,
+    requireDisplayName: false,
+  },
+  interfaceConfigOverwrite: {
+    SHOW_JITSI_WATERMARK: false,
+    TOOLBAR_BUTTONS: [
+      'microphone','camera','hangup','chat',
+      'raisehand','tileview','fullscreen'
+    ],
+  }
+});
+  
+api.addEventListener('readyToClose', () => {
+  if (CREAT) doEnd();
+  else { markLeft(); location.href = `/meetings/summary/${MID}/`; }
+});
+
+// ── TIMER ─────────────────────────────────────────────────
+let sec = 0;
+const tel = document.getElementById("timer");
+setInterval(() => {
+  sec++;
+  tel.textContent = `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`;
+}, 1000);
+
+// ── HEARTBEAT + CP DOTS ───────────────────────────────────
+const cpAt   = [600, 1200, 1800];
+const cpDone = [false, false, false];
+
+setInterval(() => {
+  fetch(`/meetings/heartbeat/${MID}/`, { method:"POST", headers:{"X-CSRFToken":CSRF} });
+  cpAt.forEach((t, i) => {
+    const dot = document.getElementById(`cp${i+1}`);
+    if (!cpDone[i] && sec >= t) {
+      cpDone[i] = true;
+      dot.classList.remove("pulsing"); dot.classList.add("done");
+      showToast();
+    } else if (!cpDone[i] && Math.abs(sec - t) < 30) {
+      dot.classList.add("pulsing");
+    }
+  });
+}, 15000);
+
+// Poll meeting status every 5 seconds for participants
+{% if not is_creator %}
+setInterval(() => {
+  fetch(`/meetings/status/${MID}/`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === "completed") {
+        showMeetingEnded();
+      }
+    })
+    .catch(e => console.log("Status check error:", e));
+}, 5000);
+{% endif %}
+
+function showMeetingEnded() {
+  // Destroy Jitsi
+  try { api.dispose(); } catch(e) {}
+
+  // Remove existing overlay if any
+  const existing = document.getElementById("meeting-ended-overlay");
+  if (existing) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = "meeting-ended-overlay";
+  overlay.style.cssText = `
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.85); z-index:9999;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    font-family:Arial,sans-serif;
+  `;
+  overlay.innerHTML = `
+    <div style="text-align:center; padding:40px; background:#1e1e2e;
+                border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+      <div style="font-size:60px; margin-bottom:16px;">🏁</div>
+      <h2 style="font-size:28px; margin:0 0 10px; color:white;">Meeting Ended</h2>
+      <p style="color:#aaa; font-size:16px; margin:0 0 28px;">
+        The host has ended this meeting.
+      </p>
+      <a href="/meetings/summary/${MID}/"
+         style="background:#4f46e5; color:white; padding:12px 32px;
+                border-radius:8px; text-decoration:none;
+                font-size:16px; font-weight:600;">
+        View Summary →
+      </a>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function showToast() {
+  const el = document.getElementById("toast");
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 3000);
+}
+// ── PARTICIPANTS ──────────────────────────────────────────
+function loadPeople() {
+  fetch(`/meetings/live_attendance/${MID}/`)
+    .then(r => r.json()).then(d => {
+      const el = document.getElementById("plist");
+      if (!d.participants.length) { el.innerHTML = '<div class="empty">No participants yet.</div>'; return; }
+      el.innerHTML = d.participants.map(p => {
+        const away = p.last_seen ? (Date.now() - new Date(p.last_seen)) > 60000 : true;
+        const ini  = (p.user||"?").slice(0,2).toUpperCase();
+        return `<div class="p-item">
+          <div class="av">${ini}</div>
+          <div><div class="pname">${p.user}</div><div class="prole">${p.left_early ? "⚠ Left Early" : away ? "Away" : "Active"}</div></div>
+          <div class="pdot ${away?"away":""}"></div>
+        </div>`;
+      }).join("");
+    });
+}
+loadPeople();
+setInterval(loadPeople, 15000);
+
+// ── SPEECH TO TEXT ────────────────────────────────────────
+let tdata = [];
+if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+  const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  rec.continuous = true; rec.interimResults = true; rec.lang = "en-IN";
+  rec.onresult = e => {
+    let interim = "", final = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t; else interim += t;
+    }
+    document.getElementById("cap-text").textContent = interim || final || "...";
+    if (final.trim()) {
+      const entry = { speaker: UNAME, text: final.trim(), time: new Date().toLocaleTimeString() };
+      tdata.push(entry);
+      addTE(entry);
+      saveTrans();
+    }
+  };
+  rec.onerror = () => setTimeout(() => rec.start(), 2000);
+  rec.onend   = () => rec.start();
+  rec.start();
+} else {
+  document.getElementById("cc-status").textContent = "CC OFF";
+  document.getElementById("cc-status").style.color = "#ef4444";
+}
+
+function addTE(e) {
+  const list  = document.getElementById("tlist");
+  const empty = list.querySelector(".empty");
+  if (empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "te";
+  div.innerHTML = `<div class="ts">${e.speaker}</div><div class="tt">${e.text}</div><div class="tm">${e.time}</div>`;
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
+}
+
+function saveTrans() {
+  fetch(`/meetings/save_transcript/${MID}/`, {
+    method:"POST",
+    headers:{"X-CSRFToken":CSRF,"Content-Type":"application/json"},
+    body: JSON.stringify({transcript: tdata})
+  });
+}
+function doSave() { saveTrans(); alert("Transcript saved!"); }
+
+// ── TAB SWITCH ────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll(".ptab").forEach(t => t.classList.remove("on"));
+  document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
+  btn.classList.add("on");
+  document.getElementById(`pane-${name}`).classList.add("on");
+  if (name === "wb") {
+    setTimeout(() => resizeWB(), 100);
+  }
+}
+// ── WHITEBOARD ────────────────────────────────────────────
+const cv  = document.getElementById("wb");
+const ctx = cv.getContext("2d");
+let drawing = false, tool = "pen", color = "#1e293b", lx = 0, ly = 0;
+
+// Multi-page storage
+let pages = [];
+let currentPage = 1;
+
+function resizeWB() {
+  const pane = document.getElementById("pane-wb");
+  const tb   = pane.querySelector(".wb-tools");
+  cv.width   = pane.offsetWidth || 800;
+  cv.height  = (pane.offsetHeight - tb.offsetHeight) || 500;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+}
+
+// ── Get correct canvas coordinates ──────────────────────
+function getPos(e) {
+  const r    = cv.getBoundingClientRect();
+  const scaleX = cv.width  / r.width;
+  const scaleY = cv.height / r.height;
+  return {
+    x: (e.clientX - r.left) * scaleX,
+    y: (e.clientY - r.top)  * scaleY
+  };
+}
+
+// ── Mouse events ─────────────────────────────────────────
+cv.addEventListener("mousedown", e => {
+  const pos = getPos(e);
+  lx = pos.x; ly = pos.y;
+  drawing = true;
+  if (tool === "text") {
+    const txt = prompt("Enter text:"); drawing = false;
+    if (txt) {
+      ctx.fillStyle = color;
+      ctx.font = "18px Arial";
+      ctx.fillText(txt, lx, ly);
+      saveWBData();
+    }
+  }
+});
+
+cv.addEventListener("mousemove", e => {
+  if (!drawing) return;
+  const pos = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(lx, ly);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.strokeStyle = tool === "eraser" ? "#fff" : color;
+  ctx.lineWidth   = tool === "eraser" ? 24 : 4;
+  ctx.lineCap     = "round";
+  ctx.lineJoin    = "round";
+  ctx.stroke();
+  lx = pos.x; ly = pos.y;
+});
+
+cv.addEventListener("mouseup",    () => { drawing = false; saveWBData(); });
+cv.addEventListener("mouseleave", () => { drawing = false; });
+
+// ── Touch events ─────────────────────────────────────────
+cv.addEventListener("touchstart", e => {
+  e.preventDefault();
+  const r  = cv.getBoundingClientRect();
+  const scaleX = cv.width  / r.width;
+  const scaleY = cv.height / r.height;
+  drawing = true;
+  lx = (e.touches[0].clientX - r.left) * scaleX;
+  ly = (e.touches[0].clientY - r.top)  * scaleY;
+});
+
+cv.addEventListener("touchmove", e => {
+  e.preventDefault();
+  if (!drawing) return;
+  const r  = cv.getBoundingClientRect();
+  const scaleX = cv.width  / r.width;
+  const scaleY = cv.height / r.height;
+  const nx = (e.touches[0].clientX - r.left) * scaleX;
+  const ny = (e.touches[0].clientY - r.top)  * scaleY;
+  ctx.beginPath();
+  ctx.moveTo(lx, ly);
+  ctx.lineTo(nx, ny);
+  ctx.strokeStyle = tool === "eraser" ? "#fff" : color;
+  ctx.lineWidth   = tool === "eraser" ? 24 : 4;
+  ctx.lineCap     = "round";
+  ctx.lineJoin    = "round";
+  ctx.stroke();
+  lx = nx; ly = ny;
+});
+
+cv.addEventListener("touchend", () => { drawing = false; saveWBData(); });
+
+// ── Tool & Color ─────────────────────────────────────────
+function setTool(t, btn) {
+  tool = t;
+  document.querySelectorAll(".wbtn").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+}
+
+function setColor(c, btn) {
+  color = c;
+  document.querySelectorAll(".cbtn").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  if (tool === "eraser") {
+    tool = "pen";
+    document.getElementById("t-pen").classList.add("on");
+    document.getElementById("t-eraser").classList.remove("on");
+  }
+}
+
+function clearWB() {
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  saveWBData();
+}
+
+// ── Save current page then clear for new page ────────────
+function savePage() {
+  // Save current canvas as a page
+  pages.push(cv.toDataURL("image/png"));
+  currentPage = pages.length + 1;
+
+  // Clear canvas for new page
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+
+  // Update page indicator
+  updatePageIndicator();
+
+  // Show toast
+  showPageSavedToast();
+  saveWBData();
+}
+
+function updatePageIndicator() {
+  const el = document.getElementById("page-indicator");
+  if (el) el.textContent = `Page ${currentPage}`;
+}
+
+function showPageSavedToast() {
+  let toast = document.getElementById("page-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "page-toast";
+    toast.style.cssText = `
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+      background:#1e293b; color:white; padding:10px 24px; border-radius:8px;
+      font-size:14px; z-index:9999; opacity:0; transition:opacity 0.3s;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = `✅ Page ${pages.length} saved! Starting page ${currentPage}`;
+  toast.style.opacity = "1";
+  setTimeout(() => { toast.style.opacity = "0"; }, 2500);
+}
+
+// ── Save to DB ───────────────────────────────────────────
+function saveWBData() {
+  fetch(`/meetings/save_whiteboard/${MID}/`, {
+    method: "POST",
+    headers: {"X-CSRFToken": CSRF, "Content-Type": "application/json"},
+    body: JSON.stringify({
+      image: cv.toDataURL("image/png"),
+      all_pages: pages
+    })
+  });
+}
+
+// ── Download ALL pages as PDF ────────────────────────────
+function dlPDF() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "landscape" });
+
+  // If no saved pages, just save current canvas
+  if (pages.length === 0) {
+    pdf.setFontSize(10);
+    pdf.setTextColor(150);
+    pdf.text("Page 1", 10, 8);
+    pdf.addImage(cv.toDataURL("image/png"), "PNG", 10, 12, 277, 175);
+    pdf.save(`whiteboard_${MID}.pdf`);
+    return;
+  }
+
+  // Add all saved pages first
+  pages.forEach((pageData, index) => {
+    if (index > 0) pdf.addPage();
+    pdf.setFontSize(10);
+    pdf.setTextColor(150);
+    pdf.text(`Page ${index + 1}`, 10, 8);
+    pdf.addImage(pageData, "PNG", 10, 12, 277, 175);
+  });
+
+  // Add current page at the end
+  pdf.addPage();
+  pdf.setFontSize(10);
+  pdf.setTextColor(150);
+  pdf.text(`Page ${pages.length + 1}`, 10, 8);
+  pdf.addImage(cv.toDataURL("image/png"), "PNG", 10, 12, 277, 175);
+
+  pdf.save(`whiteboard_${MID}.pdf`);
+}
+
+// ── END MEETING ───────────────────────────────────────────
+function doEnd() {
+  if (!CREAT) return;
+  if (confirm("End meeting for everyone?")) {
+    saveWBData(); saveTrans();
+    fetch(`/meetings/end/${MID}/`, { method:"POST", headers:{"X-CSRFToken":CSRF} })
+      .then(() => { location.href = `/meetings/summary/${MID}/`; });
+  }
+}
+function markLeft() {
+  fetch(`/meetings/mark_left/${MID}/`, { method:"POST", headers:{"X-CSRFToken":CSRF} });
+}
+window.addEventListener("beforeunload", () => { if (!CREAT) markLeft(); });
+// Initialize canvas size on load
+window.addEventListener('load', () => {
+  setTimeout(() => resizeWB(), 300);
+});
+</script>
+</body>
+</html>
